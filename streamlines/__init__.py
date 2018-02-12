@@ -30,7 +30,7 @@ import matplotlib.patches as mpp
 import sys
 
 def streamplot(x, y, u, v, density=1, linewidth=1,
-               color='k', alpha=0, cmap=None, norm=None, vmax=None, vmin=None,
+               color='k', cmap=None, norm=None, vmax=None, vmin=None,
                arrowsize=1, INTEGRATOR='RK4',dtx=10,ax=None,setxylim=False):
     '''Draws streamlines of a vector flow.
 
@@ -376,7 +376,7 @@ def streamplot(x, y, u, v, density=1, linewidth=1,
 
             p = mpp.FancyArrowPatch((tx[n],ty[n]), (tx[n+1],ty[n+1]),
                                 arrowstyle='->', lw=arrowlinewidth,
-                                mutation_scale=20*arrowsize, color=arrowcolor, alpha=alpha)
+                                mutation_scale=20*arrowsize, color=arrowcolor)
             ptch=ax.add_patch(p)
             ptch.zorder(20) #same as line
     if setxylim:
@@ -385,8 +385,8 @@ def streamplot(x, y, u, v, density=1, linewidth=1,
     return
 
 def fstreamplot(x, y, u, v, ua = None, va = None, density=1, linewidth=1,
-               color='k', alpha=0, cmap=None, norm=None, vmax=None, vmin=None,
-               arrowsize=1, INTEGRATOR='RK4',dtx=10,ax=None,ax2=None,setxylim=False,useblank=True,detectLoops=True,dobhfield=False,dodiskfield=False,startatmidplane=False,domidfield=True,a=0.0,downsample=1,minlendiskfield=0.2,minlenbhfield=0.2,dsval=0.01,doarrows=True,dorandomcolor=False,skipblankint=False,minindent=1,symmy=True,minlengthdefault=0.2):
+               color='k', cmap=None, norm=None, vmax=None, vmin=None,
+               arrowsize=1, INTEGRATOR='RK4',dtx=10,ax=None,setxylim=False,useblank=True,detectLoops=True,dobhfield=False,dodiskfield=False,startatmidplane=False,domidfield=True,a=0.0,downsample=1,minlendiskfield=0.2,minlenbhfield=0.2,dsval=0.01,doarrows=True,dorandomcolor=False,skipblankint=False,minindent=1,symmy=True,minlengthdefault=0.2):
     '''Draws streamlines of a vector flow.
 
     * x and y are 1d arrays defining an *evenly spaced* grid.
@@ -409,9 +409,6 @@ def fstreamplot(x, y, u, v, ua = None, va = None, density=1, linewidth=1,
     assert v.shape == (len(y), len(x))
     if type(linewidth) == numpy.ndarray:
         assert linewidth.shape == (len(y), len(x))
-    if type(alpha) == numpy.ndarray or type(alpha)==numpy.ma.core.MaskedArray:
-        print("alpha is numpy.ndarray"); sys.stdout.flush()
-        assert alpha.shape == (len(y), len(x))
     if type(color) == numpy.ndarray:
         assert color.shape == (len(y), len(x))
 
@@ -490,8 +487,6 @@ def fstreamplot(x, y, u, v, ua = None, va = None, density=1, linewidth=1,
     
     if ax is None:
         ax = pylab.gca()
-        ax.patch.set_facecolor('none')
-        ax.patch.set_alpha(alpha)
 
     def blank_pos(xi, yi):
         ## Takes grid space coords and returns nearest space in
@@ -922,13 +917,6 @@ def fstreamplot(x, y, u, v, ua = None, va = None, density=1, linewidth=1,
         else:
             args['linewidth'] = linewidth
             arrowlinewidth = linewidth
-
-        if type(alpha) == numpy.ndarray or type(alpha)==numpy.ma.core.MaskedArray:
-            myalpha = value_at(alpha, tgx, tgy)[:-1]
-        #    arrowalpha = args['alpha'][int(len(tgx)/2.0)]
-        #else:
-        #    args['alpha'] = alpha
-        #    arrowalpha = alpha
             
         if type(color) == numpy.ndarray:            
             args['color'] = cmap(norm(vmin=vmin,vmax=vmax)
@@ -937,21 +925,12 @@ def fstreamplot(x, y, u, v, ua = None, va = None, density=1, linewidth=1,
         else:
             if dorandomcolor:
                 val = numpy.random.rand(1)[0]
-                if type(alpha) == numpy.ndarray or type(alpha)==numpy.ma.core.MaskedArray:
-                #if 1==1 or type(alpha) == numpy.ndarray:
-                    myalpha = value_at(alpha, tgx, tgy)[:-1]
-                    myr = myalpha*0+val
-                    myg = myalpha*0+val
-                    myb = myalpha*0+val
-                    color = zip(myr,myg,myb,myalpha)
-                else:
-                    color = (val,val,val,alpha)
+                color = (val,val,val) 
             args['color'] = color
             arrowcolor = color
         
         lc = matplotlib.collections.LineCollection\
              (segments, **args)
-        #lc.set_alpha(alpha) # per-line alpha
         ax.add_collection(lc)
             
         ## Add arrows every dtx along each trajectory.
@@ -966,12 +945,9 @@ def fstreamplot(x, y, u, v, ua = None, va = None, density=1, linewidth=1,
 
             p = mpp.FancyArrowPatch((tx[n-1],ty[n-1]), (tx[n+1],ty[n+1]),
                                 arrowstyle='->', lw=arrowlinewidth,
-                                mutation_scale=20*arrowsize, color=arrowcolor)#,alpha=alpha # per arrow alpha
+                                mutation_scale=20*arrowsize, color=arrowcolor)
             ptch=ax.add_patch(p)
             ptch.set_zorder(2) #same as line
-    #ax.patch.set_facecolor('none')
-    #ax.patch.set_alpha(alpha)
-    #
     if setxylim:
         ax.set_xlim(x.min(), x.max())
         ax.set_ylim(y.min(), y.max())    

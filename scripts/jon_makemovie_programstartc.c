@@ -56,7 +56,7 @@ static int init_mpi(int *argc, char **argv[]);
 static int myargs(int argc, char *argv[]);
 static int get_chunklist(size_t strsize, char* chunkliststring, int *chunklist, int *numchunks);
 static int print_chunklist(int numchunks,int *chunklist);
-static int setup_tpy_makemovie(int myid, int *chunklist, int totalchunks, char *jobprefix, char *cwdold, char *cwdnew, int parallel, int runtype);
+static int setup_tpy_makemovie(int myid, int *chunklist, int totalchunks, char *jobprefix, char *cwdold, char *cwdnew);
 static int finish_tpy_makemovie(int myid, int *chunklist, int totalchunks, char *jobprefix, char *cwdold, char *cwdnew);
 
 static void cpu0fprintf(FILE* fileptr, char *format, ...);
@@ -71,7 +71,7 @@ int getchunklistfromfile;
 int totalchunks;
 char chunkliststring[MAXCHUNKSTRING];
 int chunklist[MAXCHUNKSTRING];
-int numchunks,numchunksactual;
+int numchunks;
 
 char DATADIR[MAXGENNAME];
 char jobprefix[MAXGENNAME];
@@ -106,14 +106,8 @@ int main(int argc, char *argv[])
 
   int numargs;
   numargs=myargs(argc,argv);
-  int systemvar;
-  systemvar=atoi(*(argv+numargs+2));
-  int parallel;
-  parallel=atoi(*(argv+numargs+3));
-  int runtype;
-  runtype=atoi(*(argv+numargs+4));
   
-  myffprintf(stdout,"myargs End: myid=%d. runtype=%d parallel=%d systemvar=%d\n",myid,systemvar,parallel,runtype);
+  myffprintf(stdout,"myargs End: myid=%d.\n",myid);
 
 
 
@@ -123,7 +117,7 @@ int main(int argc, char *argv[])
   myffprintf(stdout,"C runchunkn.sh -like Begin: myid=%d.\n",myid);
 
   int subjobnumber;
-  subjobnumber=setup_tpy_makemovie(myid,chunklist,totalchunks,jobprefix,cwdold,cwdnew,parallel,runtype);
+  subjobnumber=setup_tpy_makemovie(myid,chunklist,totalchunks,jobprefix,cwdold,cwdnew);
 
   myffprintf(stdout,"C runchunkn.sh -like End: myid=%d.\n",myid);
 
@@ -159,177 +153,23 @@ int main(int argc, char *argv[])
   else{
     fprintf(stderr,"No python args given\n"); fflush(stderr);
   }
-  // fix-up argument for runi if correct runtype (all runtype's now)
-  // argv[0]   argc=1  : python call
-  // argv[1]   argc=2  : chunklisttype
-  // argv[2]   argc=3  : chunklist
-  // argv[3]   argc=4  : runn
-  // argv[4]   argc=5  : DATADIR
-  // argv[5]   argc=6  : jobcheck
-  // argv[6]   argc=7  : init file (pythonarg=0)
-  // argv[7]   argc=8  : systemvar (pytonarg=1)
-  // argv[8]   argc=9  : parallel (pytonarg=2)
-  // argv[9]   argc=10 : runtype (pytonarg=3)
-  // argv[10]  argc=11 : modelname (pytonarg=4)
-  // argv[11]  argc=12 : fakeruni (pythonarg=5)
-  // argv[12]  argc=13 : runn (pythonarg=6)
-  // argv[13+] argc=14 : <others> (pytonarg=7)
-  if(argc-numargs>=5){ // at least runtype should be given
-    if(1){
+  // fix-up argument for runi if correct runtype
+  if(argc-numargs>=3){
+    int runtype;
+    runtype=atoi(*(argv+numargs+2));
+    if(runtype==2 || runtype==3 || runtype==4){
       // assumes large amount of space ready for this
       if(argc-numargs>=5){
-        sprintf(*(argv+numargs+6),"%d",subjobnumber-1); // -1 because needs to be from 0 to n-1 while chunk# goes from 1 to n
+	sprintf(*(argv+numargs+4),"%d",subjobnumber-1); // -1 because needs to be from 0 to n-1 while chunk# goes from 1 to n
       }
       else{
-        fprintf(stderr,"No runi given"); fflush(stderr);
+	fprintf(stderr,"No runi given"); fflush(stderr);
       }
     }
   }
   else{
     fprintf(stderr,"No runtype given"); fflush(stderr);
   }
-
-  fprintf(stderr,"STEP2: %d\n",myid); fflush(stderr);
-  
-  ////////////////////////////////////////
-  // before running python, copy over any .npy files needed.  Copy so for any system maximal distribution for disk system
-  // E.g., on stampede, copy to /tmp/ and use that file.
-  // to ensure no race condition by multiple cores, go through sequentially and test
-
-#if(USEMPI)
-      // Barrier required to ensure sequential access since no idea what order of cores is on system and how bunched into nodes.  Could use name of processor that id's the node, somewhow.
-      MPI_Barrier(MPI_COMM_WORLD);
-#endif
-
-
-  // 1) Every core deletes the /tmp/*.npy files, can be done in race mode
-  char systemstring[MAXCHUNKSTRING+MAXGENNAME];
-  sprintf(systemstring,"rm -rf /tmp/*.npy");
-
-  int id;
-  int error1=0;
-  for(id=0;id<truenumprocs;id++){
-    error1=system(systemstring);
-    
-    if(error1==-1){
-      fprintf(stderr,"AFork failed for command: %s",systemstring);
-      exit(1);
-    }
-    if(error1>0){
-      fprintf(stderr,"ACommand returned error1 for: %s",systemstring);
-      exit(1);
-    }      
-  }
-  fprintf(stderr,"STEP3: %d\n",myid); fflush(stderr);
-
-#if(USEMPI)
-      // Barrier required to ensure sequential access since no idea what order of cores is on system and how bunched into nodes.  Could use name of processor that id's the node, somewhow.
-      MPI_Barrier(MPI_COMM_WORLD);
-#endif
-
-  /// get whether files exist for copying
-  int fileexists1=0;
-  if( access( "qty2.npy", F_OK ) != -1 ){
-    // file exists
-    fileexists1++;
-  }
-  else {
-    // file doesn't exist
-  }
-  int fileexists2=0;
-  if( access( "avg2d.npy", F_OK ) != -1 ){
-    // file exists
-    fileexists2++;
-  }
-  else {
-    // file doesn't exist
-  }
-
-  fprintf(stderr,"STEP3b: %d %d\n",id,myid); fflush(stderr);
-#if(USEMPI)
-      // Barrier required to ensure sequential access since no idea what order of cores is on system and how bunched into nodes.  Could use name of processor that id's the node, somewhow.
-      MPI_Barrier(MPI_COMM_WORLD);
-#endif
-      fprintf(stderr,"STEP3c: %d %d\n",id,myid); fflush(stderr);
-
-      fprintf(stderr,"STEP4: %d\n",myid); fflush(stderr);
-
-  // 2) Every core that first sees no file, copies over the file.
-  char systemstring1[MAXCHUNKSTRING+MAXGENNAME];
-  char systemstring2[MAXCHUNKSTRING+MAXGENNAME];
-  sprintf(systemstring1,"cp qty2.npy /tmp/");
-  sprintf(systemstring2,"cp avg2d.npy /tmp/");
-
-  int error2=0;
-  for(id=0;id<truenumprocs;id++){
-    if(myid==id){
-
-      int fileexists1new=0;
-      if( access( "/tmp/qty2.npy", F_OK ) != -1 ){
-        // file exists
-        fileexists1new++;
-      }
-      else {
-        // file doesn't exist
-      }
-      int fileexists2new=0;
-      if( access( "/tmp/avg2d.npy", F_OK ) != -1 ){
-        // file exists
-        fileexists2new++;
-      }
-      else {
-        // file doesn't exist
-      }
-
-      if(fileexists1new==0 && fileexists1){
-
-        error2=system(systemstring1);
-          
-        if(error2==-1){
-          fprintf(stderr,"BFork failed for command: %s",systemstring1);
-          exit(1);
-        }
-        if(error2>0){
-          fprintf(stderr,"BCommand returned error2 for: %s",systemstring1);
-          exit(1);
-        }
-      }
-    
-
-      if(fileexists2new==0 && fileexists2){
-        
-        error2=system(systemstring2);
-        
-        if(error2==-1){
-          fprintf(stderr,"BFork failed for command: %s",systemstring2);
-          exit(1);
-        }
-        if(error2>0){
-          fprintf(stderr,"BCommand returned error2 for: %s",systemstring2);
-          exit(1);
-        }
-      }
-
-      fprintf(stderr,"STEP5a: %d %d\n",id,myid); fflush(stderr);
-
-      
-    }// end if myid==id
-
-    fprintf(stderr,"STEP5b: %d %d\n",id,myid); fflush(stderr);
-#if(USEMPI)
-      // Barrier required to ensure sequential access since no idea what order of cores is on system and how bunched into nodes.  Could use name of processor that id's the node, somewhow.
-      MPI_Barrier(MPI_COMM_WORLD);
-#endif
-      fprintf(stderr,"STEP5c: %d %d\n",id,myid); fflush(stderr);
-    
-  }
-  fprintf(stderr,"STEP6: %d\n",myid); fflush(stderr);
- 
-
-  ////////////////////////////////////////
-
-
-
   if(USINGPYTHON){
     runpy_interactive(argc-numargs, argv+numargs);
     // Need to exit (Ctrl-D EOF) and not quit(), or else entire code quits
@@ -338,8 +178,6 @@ int main(int argc, char *argv[])
     // use system() or something perhaps calling python that way?
     runpy_interactive_system(argc-numargs, argv+numargs);
   }
-
-  fprintf(stderr,"STEP7: %d\n",myid); fflush(stderr);
 
   // go back to directory where job list and completion info is kept
   error=chdir(cwdnew);
@@ -354,7 +192,7 @@ int main(int argc, char *argv[])
   finish_tpy_makemovie(myid,chunklist,totalchunks,jobprefix,cwdold,cwdnew);
 
 
-  myffprintf(stdout,"Done with jon_makemovie_programstart.c: myid=%d\n",myid);
+  myffprintf(stdout,"Done with jon_makemovie_programstart.c.\n");
 
 #if(USEMPI)
   // finish up MPI
@@ -413,7 +251,7 @@ static int myargs(int argc, char *argv[])
   size_t strsize;
   int i;
 
-  numargs=1+4; // number of current-program (i.e. non-python) arguments
+  numargs=1+4; // number of user arguments
 
   ////////////////
   //
@@ -445,8 +283,8 @@ static int myargs(int argc, char *argv[])
       strcpy(chunkliststring,argv[argi]); argi++;
       strsize=strlen(chunkliststring);
       if(strsize>MAXCHUNKSTRING){
-        myffprintf(stderr,"Increase MAXCHUNKSTRING or use malloc!\n");
-        exit(1);
+	myffprintf(stderr,"Increase MAXCHUNKSTRING or use malloc!\n");
+	exit(1);
       }
       myffprintf(stderr,"strsize=%d chunkliststring=%s\n",(int)strsize,chunkliststring);
     }
@@ -460,32 +298,32 @@ static int myargs(int argc, char *argv[])
       FILE* chunklistfile;
       chunklistfile=fopen(chunkliststringfilename,"rt");
       if(chunklistfile==NULL){
-        myffprintf(stderr,"Cannot open %s\n",chunkliststringfilename);
-        exit(1);
+	myffprintf(stderr,"Cannot open %s\n",chunkliststringfilename);
+	exit(1);
       }
       else{
-        // then create chunkliststring
-        int index=0;
-        char ch;
-        while(!feof(chunklistfile)){
-          ch=fgetc(chunklistfile);
-          if(ch=='\n'){
-            chunkliststring[index]='\0';
-            break; // then done!
-          }
-          else{
-            chunkliststring[index]=ch;
-            index++;
-          }
-        }// end while if !feof()
-        fclose(chunklistfile);
+	// then create chunkliststring
+	int index=0;
+	char ch;
+	while(!feof(chunklistfile)){
+	  ch=fgetc(chunklistfile);
+	  if(ch=='\n'){
+	    chunkliststring[index]='\0';
+	    break; // then done!
+	  }
+	  else{
+	    chunkliststring[index]=ch;
+	    index++;
+	  }
+	}// end while if !feof()
+	fclose(chunklistfile);
       }//end else if can open file
 
       // get string information like when chunklist on command line
       strsize=strlen(chunkliststring);
       if(strsize>MAXCHUNKSTRING){
-        myffprintf(stderr,"Increase MAXCHUNKSTRING or use malloc!\n");
-        exit(1);
+	myffprintf(stderr,"Increase MAXCHUNKSTRING or use malloc!\n");
+	exit(1);
       }
       myffprintf(stderr,"strsize=%d chunkliststring=%s\n",(int)strsize,chunkliststring);
 
@@ -503,10 +341,6 @@ static int myargs(int argc, char *argv[])
 
 
 
-    int runtype;
-    runtype=atoi(*(argv+numargs+4));
-    fprintf(stderr,"runtype=%d\n",runtype); fflush(stderr);
-
     ///////////////////////
     //
     // now get chunk list
@@ -515,24 +349,13 @@ static int myargs(int argc, char *argv[])
     get_chunklist(strsize,chunkliststring,chunklist,&numchunks);
     print_chunklist(numchunks,chunklist);
 
-
-    //    if(runtype==2){
-    //      int itemspergroup=atoi(*(argv+numargs+4+4));
-      //      fprintf(stderr,"itemspergroup=%d\n",itemspergroup); fflush(stderr);
-
-    //      numchunksactual=numchunks/itemspergroup;
-    //      numchunksactual=numchunksactual+1;
-    //    }
-    //    else
-    numchunksactual=numchunks;
-
-    if(numchunksactual!=truenumprocs){
-      myffprintf(stderr,"Must have numchunksactual=%d equal to truenumprocs=%d\n",numchunksactual,truenumprocs);
+    if(numchunks!=truenumprocs){
+      myffprintf(stderr,"Must have numchunks=%d equal to truenumprocs=%d\n",numchunks,truenumprocs);
       myffprintf(stderr,"Required since cannot fork(), so each proc can only call 1 python call.\n");
       exit(1);
     }
     else{
-      myffprintf(stderr,"Good chunk count: numchunksactual=%d\n",numchunksactual);
+      myffprintf(stderr,"Good chunk count: numchunks=%d\n",numchunks);
     }// end else if good numchunks
   }// end if good number of arguments
 
@@ -575,8 +398,8 @@ static int get_chunklist(size_t strsize, char* chunkliststring, int *chunklist, 
     else{
 
       if(chunklist[*numchunks]<=0){
-        myffprintf(stderr,"Chunk number problem: %d\n",chunklist[*numchunks]);
-        exit(1);
+	myffprintf(stderr,"Chunk number problem: %d\n",chunklist[*numchunks]);
+	exit(1);
       }
 
       // iterate
@@ -594,7 +417,7 @@ static int get_chunklist(size_t strsize, char* chunkliststring, int *chunklist, 
 
 
 // do things like in runchunkn.sh script
-static int setup_tpy_makemovie(int myid, int *chunklist, int totalchunks, char *jobprefix, char *cwdold, char *cwdnew, int parallel, int runtype)
+static int setup_tpy_makemovie(int myid, int *chunklist, int totalchunks, char *jobprefix, char *cwdold, char *cwdnew)
 {
   int subchunk;
   int subjobnumber;
@@ -619,6 +442,11 @@ static int setup_tpy_makemovie(int myid, int *chunklist, int totalchunks, char *
   }
 
 
+  // At the end, will need to wait for all processes to end.   Do so via a file for each myid.  Here we remove old file if it exists.
+  // ensure to use same name when creating and checking in finish_tpy_makemovie()
+  char finishname[MAXGENNAME];
+  sprintf(finishname,"finish.%d",myid);
+  remove(finishname);
 
 
   /////////////////////
@@ -630,7 +458,7 @@ static int setup_tpy_makemovie(int myid, int *chunklist, int totalchunks, char *
   subchunk=myid+1; // dose-out chunks by CPU id number.
   subjobnumber=chunklist[myid]; // access array with 0 as first element. (C index type.)
   //  sprintf(subjobname,"%sc%dtc%d",jobprefix,subjobnumber,totalchunks);
-  sprintf(subjobname,"%s_%d",jobprefix,runtype); // all chunks in same directory
+  sprintf(subjobname,"%s",jobprefix); // all chunks in same directory
   sprintf(subjobdir,"%s/%s",DATADIR,subjobname);
 
   // assumes path exists.  Let fail if not, since then not setup properly using chunkbunch.sh script
@@ -642,9 +470,6 @@ static int setup_tpy_makemovie(int myid, int *chunklist, int totalchunks, char *
   //  exit(1);
   // }
 
-  ///////////
-  //
-  //// CHDIR
   error=chdir(subjobdir);
 
   if(error!=0){
@@ -652,37 +477,22 @@ static int setup_tpy_makemovie(int myid, int *chunklist, int totalchunks, char *
     exit(1);
   }
 
-
-  // At the end, will need to wait for all processes to end.   Do so via a file for each myid.  Here we remove old file if it exists.
-  // ensure to use same name when creating and checking in finish_tpy_makemovie()
-  char finishname[MAXGENNAME];
-  sprintf(finishname,"finish.%d",myid);
-  remove(finishname);
-
-#if(USEMPI)
-  // barrier to ensure all cores remove finish file so other cores don't stop if quickly reach end before any old finish file erased.  finish file is normally removed, but only if ended before time out.
-  MPI_Barrier(MPI_COMM_WORLD);
-#endif
-
-
-  if(parallel<=2){ // not really needed except as pure debug
-    ////////////////////////
-    //
-    // setup pychunk.dat
-    //
-    ////////////////////////
-    char pychunkfilename[MAXGENNAME];
-    sprintf(pychunkfilename,"pychunk.%s.%d.%d.dat",jobprefix,subjobnumber,totalchunks);
-    pychunkfile=fopen(pychunkfilename,"wt"); // new file, do not append
-    if(pychunkfile==NULL){
-      myffprintf(stderr,"Failed to open pychunk.dat file\n");
-      exit(1);
-    }
-
-    myffprintf(pychunkfile,"%d %d\n",subchunk,totalchunks);
-
-    fclose(pychunkfile);
+  ////////////////////////
+  //
+  // setup pychunk.dat
+  //
+  ////////////////////////
+  char pychunkfilename[MAXGENNAME];
+  sprintf(pychunkfilename,"pychunk.%s.%d.%d.dat",jobprefix,subjobnumber,totalchunks);
+  pychunkfile=fopen(pychunkfilename,"wt"); // new file, do not append
+  if(pychunkfile==NULL){
+    myffprintf(stderr,"Failed to open pychunk.dat file\n");
+    exit(1);
   }
+
+  myffprintf(pychunkfile,"%d %d\n",subchunk,totalchunks);
+
+  fclose(pychunkfile);
 
   ////////
   //
@@ -718,10 +528,8 @@ static int setup_tpy_makemovie(int myid, int *chunklist, int totalchunks, char *
 // do things like in runchunkn.sh script AFTER binary is called
 static int finish_tpy_makemovie(int myid, int *chunklist, int totalchunks, char *jobprefix, char *cwdold, char *cwdnew)
 {
-  char myfinishname[MAXGENNAME];
   char finishname[MAXGENNAME];
   FILE *myfinishfile;
-  FILE *finishfile;
 
 
   // change back to old working directory (this is where finish files will be located)
@@ -729,10 +537,10 @@ static int finish_tpy_makemovie(int myid, int *chunklist, int totalchunks, char 
 
 
   // first create my file since this CPU is done.
-  sprintf(myfinishname,"finish.%d",myid);
-  myfinishfile=fopen(myfinishname,"wt");
+  sprintf(finishname,"finish.%d",myid);
+  myfinishfile=fopen(finishname,"wt");
   if(myfinishfile==NULL){
-    myffprintf(stderr,"Could not open %s file\n",myfinishname);
+    myffprintf(stderr,"Could not open %s file\n",finishname);
     exit(1);
   }
   myffprintf(myfinishfile,"1\n"); // stick a 1 in there so non-zero size
@@ -744,16 +552,16 @@ static int finish_tpy_makemovie(int myid, int *chunklist, int totalchunks, char 
 
     finished=1; // guess that finished
     int i;
-    for(i=0;i<numchunksactual;i++){
+    for(i=0;i<numchunks;i++){
       sprintf(finishname,"finish.%d",i);
-      finishfile=fopen(finishname,"rt");
-      if(finishfile==NULL){
-        finished=0;
-        break; // no point in checking rest of files, so exit for loop
+      myfinishfile=fopen(finishname,"rt");
+      if(myfinishfile==NULL){
+	finished=0;
+	break; // no point in checking rest of files, so exit for loop
       }
       else{
-        // then file exists, so no missing files so far
-        fclose(finishfile);
+	// then file exists, so no missing files so far
+	fclose(myfinishfile);
       }
     }
     if(finished==0){
@@ -766,15 +574,6 @@ static int finish_tpy_makemovie(int myid, int *chunklist, int totalchunks, char 
     }
 
   }// end while(1)
-
-
-#if(USEMPI)
-  // Barrier so don't remove until all cores reach barrier, else last one to finish will find all finish files then remove its own finish file, so rest of cores won't find that last finish file.
-  MPI_Barrier(MPI_COMM_WORLD);
-#endif
-
-  // once done, can remove my finish file.
-  remove(myfinishname);
 
 
   return(0);
@@ -935,64 +734,64 @@ int runpy_code(char *code)
 int runpy_script_func(char *scriptname, char *funcname, int argsc, char *argsv[])
 {
 #if(USINGPYTHON)
-  PyObject *pName, *pModule, *pDict, *pFunc;
-  PyObject *pArgs, *pValue;
-  int i;
+    PyObject *pName, *pModule, *pDict, *pFunc;
+    PyObject *pArgs, *pValue;
+    int i;
 
 
-  Py_Initialize();
+    Py_Initialize();
 
-  pName = PyString_FromString(scriptname);
-  /* Error checking of pName left out */
+    pName = PyString_FromString(scriptname);
+    /* Error checking of pName left out */
 
-  pModule = PyImport_Import(pName); // this imports the script
-  Py_DECREF(pName);
+    pModule = PyImport_Import(pName); // this imports the script
+    Py_DECREF(pName);
 
-  if (pModule != NULL) {
-    pFunc = PyObject_GetAttrString(pModule, funcname);
-    /* pFunc is a new reference */
+    if (pModule != NULL) {
+        pFunc = PyObject_GetAttrString(pModule, funcname);
+        /* pFunc is a new reference */
 
-    if (pFunc && PyCallable_Check(pFunc)) {
-      pArgs = PyTuple_New(argsc);
-      for (i = 0; i <argsc; ++i) {
-        pValue = PyInt_FromLong(atoi(argsv[i]));
-        if (!pValue) {
-          Py_DECREF(pArgs);
-          Py_DECREF(pModule);
-          fprintf(stderr, "Cannot convert argument\n");
-          return 1;
+        if (pFunc && PyCallable_Check(pFunc)) {
+          pArgs = PyTuple_New(argsc);
+            for (i = 0; i <argsc; ++i) {
+                pValue = PyInt_FromLong(atoi(argsv[i]));
+                if (!pValue) {
+                    Py_DECREF(pArgs);
+                    Py_DECREF(pModule);
+                    fprintf(stderr, "Cannot convert argument\n");
+                    return 1;
+                }
+                /* pValue reference stolen here: */
+                PyTuple_SetItem(pArgs, i, pValue);
+            }
+            pValue = PyObject_CallObject(pFunc, pArgs); // this is where we call a function with arguments
+            Py_DECREF(pArgs);
+            if (pValue != NULL) {
+                printf("Result of call: %ld\n", PyInt_AsLong(pValue));
+                Py_DECREF(pValue);
+            }
+            else {
+                Py_DECREF(pFunc);
+                Py_DECREF(pModule);
+                PyErr_Print();
+                fprintf(stderr,"Call failed\n");
+                return 1;
+            }
         }
-        /* pValue reference stolen here: */
-        PyTuple_SetItem(pArgs, i, pValue);
-      }
-      pValue = PyObject_CallObject(pFunc, pArgs); // this is where we call a function with arguments
-      Py_DECREF(pArgs);
-      if (pValue != NULL) {
-        printf("Result of call: %ld\n", PyInt_AsLong(pValue));
-        Py_DECREF(pValue);
-      }
-      else {
-        Py_DECREF(pFunc);
+        else {
+            if (PyErr_Occurred())
+                PyErr_Print();
+            fprintf(stderr, "Cannot find function \"%s\"\n", funcname);
+        }
+        Py_XDECREF(pFunc);
         Py_DECREF(pModule);
-        PyErr_Print();
-        fprintf(stderr,"Call failed\n");
-        return 1;
-      }
     }
     else {
-      if (PyErr_Occurred())
         PyErr_Print();
-      fprintf(stderr, "Cannot find function \"%s\"\n", funcname);
+        fprintf(stderr, "Failed to load \"%s\"\n", scriptname);
+        return 1;
     }
-    Py_XDECREF(pFunc);
-    Py_DECREF(pModule);
-  }
-  else {
-    PyErr_Print();
-    fprintf(stderr, "Failed to load \"%s\"\n", scriptname);
-    return 1;
-  }
-  Py_Finalize();
+    Py_Finalize();
 #endif
-  return 0;
+    return 0;
 }

@@ -26,3 +26,6 @@ done
 rm -rf imagenormal.mp4
 ffmpeg -i imagenormal%d.png -r 25 -sameq imagenormal.mp4
 
+
+ffmpeg -framerate 10 -i image%d.png -sameq seedevo_v_hc.mp4
+#-framerate works better than -r; has to come first
