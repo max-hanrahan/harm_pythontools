@@ -35894,6 +35894,8 @@ def Megantest(fnumber):
 
     return ibeta
 
+def mk2d3d(version2d):
+    return(np.array([version2d[:,:,0].T,]*nz).T)
 
 def areahor(filename=None):
     # first load grid file
@@ -35934,3 +35936,291 @@ def areahor(filename=None):
     print("area=%g" % (area))
     areaup = np.sum(unit[ihor,0:ny/2,:]*gdet[ihor+1,0:ny/2,:]*_dx2*_dx3)
     print("areaup=%g" % (areaup))
+
+def getnearpos(array,value):
+    idx = (np.abs(array-value)).argmin()
+    return idx
+
+def checkifseedpointexists(fnumber):
+    #
+    fname = 'snapshot/coords'+str(fnumber-1)+'_wv_hc.npz'
+    print("checkifseedpointexists(): checking for fname=%s" % (fname)) ; sys.stdout.flush()
+    #
+    if os.path.isfile( fname ):
+        print( "File %s exists" % fname );sys.stdout.flush()
+        return(1)
+    else:
+        print( "File %s does not exist" % fname );sys.stdout.flush()
+        return(0)
+
+def fhorvstime2(ihor):
+    """
+    Returns a tuple (ts,fs,mdot): lists of times, horizon fluxes, and Mdot
+    """
+    flist = glob.glob( os.path.join("dumps/", "fieldline*.bin") )
+    sort_nicely(flist)
+    #
+    ts=np.empty(len(flist),dtype=np.float32)
+    fs=np.empty(len(flist),dtype=np.float32)
+    md=np.empty(len(flist),dtype=np.float32)
+    phibh=np.empty(len(flist),dtype=np.float32)
+    for findex, fname in enumerate(flist):
+        print( "Reading " + fname + " ..." )
+        rfd("../"+fname)
+        fs[findex]=horfluxcalc(ivalue=ihor)
+        md[findex]=mdotcalc(ihor)
+        ts[findex]=t
+	mdtot=mdotcalc(which=condmaxbsqorho)
+	defaultfti,defaultftf=getdefaulttimes()
+	(defaultfti,defaultftf) = fix_defaulttimes2(ts,defaultfti,defaultftf)
+	fti = defaultfti
+        ftf = defaultftf
+	print fti, ftf
+	mdotfinavgvsr30 = timeavg(mdtot[:,:],t,fti,ftf)
+	print "check3"
+        mdotfinavg = np.float64(mdotfinavgvsr30)[ihor]
+	print "check4"
+	phibh[findex]=(fs[:,ihor]/2.0)*(0.2*np.sqrt(4.0*np.pi))/np.fabs(mdotfinavg+1E-30)**0.5
+    print( "Done fhorvstime!" )
+    return((ts,phibh,md))
+
+def getphibhmdot():
+    grid3d("gdump.bin", use2d=True)
+    rfdfirstfile()
+    rhor=1+(1-a**2)**0.5
+    ihor=iofr(rhor)
+    ts,phibh,md=fhorvstime2(ihor)
+    #plotit(ts,phibh,md)
+
+def getphibhmdot():
+    grid3d("gdump.bin", use2d=True)
+    rfdfirstfile()
+    rhor=1+(1-a**2)**0.5
+    ihor=iofr(rhor)
+    ts,phibh,md=fhorvstime2(ihor)
+    #plotit(ts,phibh,md)
+
+def avgstr_v_time(fnumber):
+    '''A function to compute the average and integrated magnetic (Maxwell) stress in a region for a given time (fnumber)'''
+    # first load grid file                                                                              
+    global use2dglobal
+    use2dglobal=True
+    grid3d("gdump.bin", use2d=use2dglobal)
+    # now load a single fieldline file
+    rfd("fieldline"+str(fnumber).zfill(4)+".bin")
+    ###############################                                                                                                                                                                                  
+    (rhoclean,ugclean,uublob,maxbsqorhonear,maxbsqorhofar,condmaxbsqorho,condmaxbsqorhorhs,rinterp)=getrhouclean(rho,ug,uu)
+    cvel()
+    rhor=1+(1-a**2)**0.5
+    ihor=iofr(rhor)
+    ##############################                                                                                                                                                                                   
+    ###choose the radial extent of the plot
+    nxin=iofr(10)
+    nxout=iofr(40)
+    ###choose extent in r,theta:
+    hmin=np.pi/2 - 0.1
+    hmax=np.pi/2 + 0.1
+    mhin=jofh(hmin,nxout)
+    mhout=jofh(hmax,nxout)
+    coremin=np.pi/2
+    coremax=np.pi/2
+    mc_in=jofh(coremin,nxout)
+    mc_out=jofh(coremax,nxout)
+
+    loadavg()
+    br=bu[1]*np.sqrt(gv3[1,1])
+    bphi=bd[3]*np.sqrt(gn3[3,3])
+    nummag=-br*bphi
+    ptot=0.5*avg_bsq+(gam-1.0)*avg_ug
+
+    numavg=np.average(nummag[nxin:nxout,mhin:mhout,:], axis=(1,2))
+    denavg=np.average(ptot[nxin:nxout,mhin:mhout,:], axis=(1,2))
+    #*rho[nxin:nxout,mhin:mhout,:]
+    alpha=numavg/denavg
+
+    numint=np.sum(nummag[nxin:nxout,mhin:mhout,:]*gdet[nxin:nxout,mhin:mhout,:]*_dx2*_dx1)
+    numint1=np.average(numint)
+    denint=np.sum(ptot[nxin:nxout,mhin:mhout,:]*gdet[nxin:nxout,mhin:mhout,:]*_dx1*_dx2)
+    aint=numint1/denint
+    return alpha, aint
+
+def stressvtime(fnumber):
+    '''A function to compute Maxwell (magnetic) stress and decompose it into 4 terms (mean, purely turbulent, and 2 mixed terms) due to dividing the magnetic field into a mean and turbulent components.
+    Typically used in a for loop over many fieldline files to generate a time series.
+    ***Why not fold this into stressvtime1()?***'''
+    #First load grid file
+    global use2dglobal
+    use2dglobal=True
+    grid3d("gdump.bin", use2d=use2dglobal)
+    #Now load a single fieldline file
+    rfd("fieldline"+str(fnumber).zfill(4)+".bin")
+    ###############################
+    #Standard computation of 4-vectors, horizon radius and gas pressure
+    (rhoclean,ugclean,uublob,maxbsqorhonear,maxbsqorhofar,condmaxbsqorho,condmaxbsqorhorhs,rinterp)=getrhouclean(rho,ug,uu)
+    cvel()
+    rhor=1+(1-a**2)**0.5
+    ihor=iofr(rhor)
+    pg=(gam-1.0)*ug
+    ##############################
+    ###Choose the radial extent of the plot
+    nxin=iofr(10)
+    nxout=iofr(40)
+    ###Choose extent in theta:
+    hmin=np.pi/2 - 0.1
+    hmax=np.pi/2 + 0.1
+    mhin=jofh(hmin,nxout)
+    mhout=jofh(hmax,nxout)
+
+    loadavg()
+
+    ###Transform the magnetic field from the comoving frame to the lab frame and divide it into mean and turbulent components
+    br=bu[1]*np.sqrt(gv3[1,1])
+    brmean=avg_bu[1]*np.sqrt(gv3[1,1])
+    brpert=br-brmean '''why not compute this the same way as was done in stressvtime1()? Are they the same?'''
+    bz=-bu[2]*np.sqrt(gv3[2,2])
+    bzmean=-avg_bu[2]*np.sqrt(gv3[2,2])
+    bzpert=bz-bzmean
+    bphi=bd[3]*np.sqrt(gn3[3,3])
+    bphimean=avg_bd[3]*np.sqrt(gn3[3,3])
+    bphipert=bphi-bphimean
+
+    #Compute unnormalized stress terms
+    numtot=-br*bphi #full time dependent stress: should equal sum of other terms
+    numtotvr=intangle(gdet[nxin:nxout,mhin:mhout,:]*numtot[nxin:nxout,mhin:mhout,:])
+    numtotvt=np.sum(numtotvr*_dx1)
+
+    num_mean=-brmean*bphimean #time averaged stress
+    num_mean_vr=intangle(gdet[nxin:nxout,mhin:mhout,:]*num_mean[nxin:nxout,mhin:mhout,:])
+    num_mean_vt=np.sum(num_mean_vr*_dx1)
+
+    num_turb=-brpert*bphipert #turbulent compnent stress
+    num_turb_vr=intangle(gdet[nxin:nxout,mhin:mhout,:]*num_turb[nxin:nxout,mhin:mhout,:])
+    num_turb_vt=np.sum(num_turb_vr*_dx1)
+
+    num_mix1=-brmean*bphipert #<br>*turbulent bphi
+    num_mix1_vr=intangle(gdet[nxin:nxout,mhin:mhout,:]*num_mix1[nxin:nxout,mhin:mhout,:])
+    num_mix1_vt=np.sum(num_mix1_vr*_dx1)
+
+    num_mix2=-brpert*bphimean #turbulent br*<bphi>
+    num_mix2_vr=intangle(gdet[nxin:nxout,mhin:mhout,:]*num_mix2[nxin:nxout,mhin:mhout,:])
+    num_mix2_vt=np.sum(num_mix2_vr*_dx1)
+
+    ###denominator
+    ptot=0.5*avg_bsq+(gam-1.0)*avg_ug
+    pb=0.5*avg_bsq
+    pg=(gam-1.0)*avg_ug
+    denom1=intangle(gdet[nxin:nxout,mhin:mhout,:]*ptot[nxin:nxout,mhin:mhout,:])
+    denom=np.sum(denom1*_dx1)
+
+    #normalizing
+    alphatot=numtotvt/denom
+    alphamean=num_mean_vt/denom
+    alphaturb=num_turb_vt/denom
+    alphamix1=num_mix1_vt/denom
+    alphamix2=num_mix2_vt/denom
+
+    return alphatot, alphamean, alphaturb, alphamix1, alphamix2
+
+def stressvtime1(fnumber):
+    '''a function find the Maxwell (magnetic) stress in different regions of the disk (such as the low density Rayleigh-Taylor bubble) at a given time (fieldline file).
+    Typically used in a for loop over many fieldline files to generate a time series.'''
+    #First load grid file
+    global use2dglobal
+    use2dglobal=True
+    grid3d("gdump.bin", use2d=use2dglobal)
+    #Now load a single fieldline file
+    rfd("fieldline"+str(fnumber).zfill(4)+".bin")
+    ##############################
+    #standard computation of 4-vectors, horizon radius, index of horizon radius and gas pressure 
+    (rhoclean,ugclean,uublob,maxbsqorhonear,maxbsqorhofar,condmaxbsqorho,condmaxbsqorhorhs,rinterp)=getrhouclean(rho,ug,uu)
+    cvel()
+    rhor=1+(1-a**2)**0.5
+    ihor=iofr(rhor)
+    pg=(gam-1.0)*ug
+    ##############################
+    ###choose the radial extent of the plot
+    nxin=iofr(10)
+    nxout=iofr(40)
+    ###choose extent in theta:
+    hmin=np.pi/2 - 0.1
+    hmax=np.pi/2 + 0.1
+    mhin=jofh(hmin,nxout)
+    mhout=jofh(hmax,nxout)
+
+    loadavg()
+    ###Compute the inverse of plasma beta for masking
+    ibeta=0.5*bsq/pg
+
+    ###computing Maxwell stress###
+    #start by transforming magentic field from comoving to lab frame
+    br=bu[1]*np.sqrt(gv3[1,1])
+    brpert=(bu[1]-avg_bu[1])*np.sqrt(gv3[1,1])
+    bz=-bu[2]*np.sqrt(gv3[2,2])
+    bzpert=-(bu[2]-avg_bu[2])*np.sqrt(gv3[2,2])
+    bphi=bd[3]*np.sqrt(gn3[3,3])
+    bphipert=(bd[3]-avg_bd[3])*np.sqrt(gn3[3,3])
+
+    #Mask magnetic field components for plotting (inside RT bubble)
+    brmsk=ma.masked_where(ibeta<10,br)
+    bzmsk=ma.masked_where(ibeta<10,bz)
+    bphimsk=ma.masked_where(ibeta<10,bphi)
+    
+    #compute Maxwell stress integrand
+    integrand_rp=-br*bphi*gdet*_dx1*_dx2*_dx3
+    integrand_rp_pert=-brpert*bphipert*gdet*_dx1*_dx2*_dx3
+
+    integrand_zp=-bz*bphi*gdet*_dx1*_dx2*_dx3
+    integrand_zp_pert=-bzpert*bphipert*gdet*_dx1*_dx2*_dx3
+
+    #Mask to isolate RT bubble quantities
+    bubble_rp=ma.masked_where(ibeta<10,integrand_rp)
+    bubble_rp_pert=ma.masked_where(ibeta<10,integrand_rp_pert)
+    bubble_zp=ma.masked_where(ibeta<10,integrand_zp)
+    bubble_zp_pert=ma.masked_where(ibeta<10,integrand_zp_pert)
+
+    #Integrate RT bubble quantities
+    nummagrp_in=np.sum(bubble_rp[nxin:nxout,mhin:mhout,:])
+    nummagrp_pert_in=np.sum(bubble_rp_pert[nxin:nxout,mhin:mhout,:])
+    nummagzp_in=-np.sum(bubble_zp[nxin:nxout,ny/2:mhout,:])+np.sum(bubble_zp[nxin:nxout,mhin:ny/2,:])
+    nummagzp_pert_in=-np.sum(bubble_zp_pert[nxin:nxout,ny/2:mhout,:])+np.sum(bubble_zp_pert[nxin:nxout,mhin:ny/2,:])
+
+    #Mask to isolate disk quantities
+    disk_rp=ma.masked_where(ibeta>=10,integrand_rp)
+    disk_rp_pert=ma.masked_where(ibeta>=10,integrand_rp_pert)
+    disk_zp=ma.masked_where(ibeta>=10,integrand_zp)
+    disk_zp_pert=ma.masked_where(ibeta>=10,integrand_zp_pert)
+
+    #Integrate high density disk quantities
+    nummagrp_out=np.sum(disk_rp[nxin:nxout,mhin:mhout,:])
+    nummagrp_pert_out=np.sum(disk_rp_pert[nxin:nxout,mhin:mhout,:])
+    nummagzp_out=-np.sum(disk_zp[nxin:nxout,ny/2:mhout,:])+np.sum(disk_zp[nxin:nxout,mhin:ny/2,:])
+    nummagzp_pert_out=-np.sum(disk_zp_pert[nxin:nxout,ny/2:mhout,:])+np.sum(disk_zp_pert[nxin:nxout,mhin:ny/2,:])
+
+    #Denominator - normalize the above quantities by total pressure
+    ptot=0.5*avg_bsq+(gam-1.0)*avg_ug
+    integrand_denom=ptot*gdet*_dx1*_dx2*_dx3
+    denom=np.sum(integrand_denom[nxin:nxout,mhin:mhout,:])
+
+    #Normalize stress in/out of bubble
+    alphamagrp_bubble=nummagrp_in/denom
+    alphamagrp_disk=nummagrp_out/denom
+    alphamagrp_pert_bubble=nummagrp_pert_in/denom
+    alphamagrp_pert_disk=nummagrp_pert_out/denom
+
+    alphamagzp_bubble=nummagzp_in/denom
+    alphamagzp_disk=nummagzp_out/denom
+    alphamagzp_pert_bubble=nummagzp_pert_in/denom
+    alphamagzp_pert_disk=nummagzp_pert_out/denom
+
+    #Compute and normalize the total stress in the region being studied. Second term in nummag* is for use when computing quantities in the corona.
+    nummagrp=np.sum(integrand_rp[nxin:nxout,mhin:mhout,:])#+np.sum(integrand_rp[nxin:nxout,mc_out:mhout,:])
+    nummagrp_pert=np.sum(integrand_rp_pert[nxin:nxout,mhin:mc_in,:])#+np.sum(integrand_rp_pert[nxin:nxout,mc_out:mhout,:])
+    alphamagrp=nummagrp/denom
+    alphamagrp_pert=nummagrp_pert/denom
+
+    nummagzp=np.sum(integrand_zp[nxin:nxout,ny/2:mhout,:])#-np.sum(integrand_zp[nxin:nxout,mhin:ny/2,:])
+    nummagzp_pert=np.sum(integrand_zp_pert[nxin:nxout,mc_out:mhout,:])#-np.sum(integrand_zp_pert[nxin:nxout,mhin:mc_in,:])
+    alphamagzp=nummagzp/denom
+    alphamagzp_pert=nummagzp_pert/denom
+
+    return alphamagrp, alphamagrp_pert, alphamagzp, alphamagzp_pert
