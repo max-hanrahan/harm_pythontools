@@ -9845,7 +9845,7 @@ def getnonbobnqty():
     else:
         #value=2 + 6 + 14 + 4 + 22*5 + 25 + 22*3 + (13*4+13*4) + 11+15 + (14+2+48) +  (8+42) + (6) + (13*4+13*4) + (13*4+13*4)
         # with urad stuff
-        value=2 + 6 + 14 + 4 + 23*5 + 26 + 23*3 + (14*4+14*4) + 11+15 + (14+2+48) +  (8+42) + (6) + (14*4+14*4) + (14*4+14*4)
+        value=2 + 6 + 14 + 4 + 23*5 + 26 + 23*3 + (14*4+14*4) + 11+15 + (14+2+48) +  (8+42) + (6) + (14*4+14*4) + (14*4+14*4) + 1 #added for alphamagpert (Megan)
         value=value+4 # for edrad edradthin and ldrad ldradthin
                                
 
@@ -11421,6 +11421,9 @@ def getqtymem(qtymem):
     FEMArhosq_jet_radiuspow_rad30=qtymem[i];i+=1
     global     FEEMrhosq_jet_radiuspow_rad30
     FEEMrhosq_jet_radiuspow_rad30=qtymem[i];i+=1
+    
+    global     alphamagpert
+    alphamagpert=qtymem[i];i+=1 #(Megan)
     #
     #
     ###################################
@@ -11805,6 +11808,16 @@ def getqtyvstime(ihor,horval=1.0,fmtver=2,dobob=0,whichi=None,whichn=None,altrea
             #alphamag3[qindex]=intangle(gdet*jabs(-bu[1]*np.sqrt(gv3[1,1])*bd[3]*np.sqrt(gn3[3,3]))*denfactor,**keywordsrhosq)
             #alphamag4[qindex]=intangle(gdet*(bsq*0.5)*denfactor,**keywordsrhosq)
         #
+	#alphamagpert is the Maxwell Stress due to perturbations in the magnetic field of the disk; calculated with same conditions as alphamag3 (Megan)
+        denfactor=rholab
+        diskcondition=condmaxbsqorho
+        keywordsrhosq={'which': diskcondition}
+        rhosqint=intangle(gdet*denfactor,**keywordsrhosq)+tiny
+        #alphamagpert[qindex]=intangle(gdet*jabs(-(bu[1]-avg_bu[1])*np.sqrt(gv3[1,1])*(bd[3]-avg_bd[3])*np.sqrt(gn3[3,3]))/(bsq*0.5+(gam-1.0)*ug)*denfactor,**keywordsrhosq)/rhosqint
+        numer=intangle(gdet*jabs(-(bu[1]-avg_bu[1])*np.sqrt(gv3[1,1])*(bd[3]-avg_bd[3])*np.sqrt(gn3[3,3]))*denfactor,**keywordsrhosq)/rhosqint
+        denom=intangle(gdet*(bsq*0.5+(gam-1.0)*ug)*denfactor,**keywordsrhosq)/rhosqint
+        alphamagpert[qindex]=numer/denom
+	#
         gc.collect()
         #################################
         print("alphareynolds" + " time elapsed: %d" % (datetime.now()-start_time).seconds ) ; sys.stdout.flush()
@@ -12376,6 +12389,27 @@ def getqtyvstime(ihor,horval=1.0,fmtver=2,dobob=0,whichi=None,whichn=None,altrea
         #
         #
         #
+        #### Updated 3/9/15 by Megan for stress,bz correlation analysis                                                                                                                                                                                                                                              
+	r30=iofr(30)                                                                                                                                                                            
+        numMag=jabs(-bu[1]*np.sqrt(gv3[1,1])*bd[3]*np.sqrt(gn3[3,3]))
+        denMR=(bsq*0.5+(gam-1.0)*ug)
+        amag=numMag/denMR                                                                                                                                                                                      
+        if avgexists==1:
+            numRey=jabs(rho*(uu[1]-avg_uu[1])*np.sqrt(gv3[1,1])*(ud[3]-avg_ud[3])*np.sqrt(gn3[3,3]))
+        else:
+            numRey=jabs(rho*(uu[1])*np.sqrt(gv3[1,1])*(ud[3])*np.sqrt(gn3[3,3]))
+        arey=numRey/denMR
+        stress=amag+arey                                                                                                                                                                               
+        bz=mybu2
+        ###plotting
+	#nxin=0#iofr(5)
+        #nxout=iofr(30)
+        #myx=r[nxin:nxout:,:,0]*np.sin(h[nxin:nxout,:,0])*np.cos(ph[nxin:nxout,:,0])
+        #myy=r[nxin:nxout,:,0]*np.sin(h[nxin:nxout,:,0])*np.sin(ph[nxin:nxout,:,0])
+        #myz=r[nxin:nxout,:,0]*np.cos(h[nxin:nxout,:,0])
+        #ax = plt.gca()
+        #ax.pcolor(myx,myz,myfun[nxin:nxout,:,0])
+        #plc(stress[nxin:nxout,:,0],xcoord=myx,ycoord=myz,ax=ax,cb=True,nc=50)
         #
         #
         printusage()
@@ -21838,14 +21872,9 @@ def plotqtyvstime(qtymem,fullresultsoutput=0,whichplot=None,ax=None,findex=None,
             #print("normpowerfft")
             #print(normpowerfft)
             DTavg=tsnew[condt][-1]-tsnew[condt][0]
+            dtavg=tsnew[condt][-1]-tsnew[condt][-2]
             DTavgfull=tsnew[condtfull][-1]-tsnew[condtfull][0]
-            if(len(tsnew[condt]<=1)):
-                dtavg=DTavg
-                dtavgfull=DTavgfull
-            else:
-                dtavg=tsnew[condt][-1]-tsnew[condt][-2]
-                dtavgfull=tsnew[condtfull][-1]-tsnew[condtfull][-2]
-            #
+            dtavgfull=tsnew[condtfull][-1]-tsnew[condtfull][-2]
             nyquistfft=1.0/(2.0*dtavg)
             nyquistfftfull=1.0/(2.0*dtavgfull)
             print("DTavg=%g dtavg=%g nyquistfft=%g" % (DTavg,dtavg,nyquistfft))
@@ -22348,7 +22377,7 @@ def plotqtyvstime(qtymem,fullresultsoutput=0,whichplot=None,ax=None,findex=None,
             #print(normpowerfft)
             DTavg=ts[condt][-1]-ts[condt][0]
             DTavgfull=ts[condtfull][-1]-ts[condtfull][0]
-            if(len(ts[condt]<=1)):
+            if(len(ts[condt])<=1):
                 dtavg=DTavg
                 dtavgfull=DTavgfull
             else:
@@ -23841,10 +23870,7 @@ def timeavg_vstvsr( qty, ts, fti, ftf, step = 1 ):
         qtyavg = qtycond[0];
     else:
         # then no value to report, so set to zero and report problem
-        if(len(qty.shape))==1:
-            qtyavg = 0.0*qty[0]*float('nan')
-        else:
-            qtyavg = 0.0*qty[0,:]*float('nan')
+        qtyavg = 0*qty[0,:]*float('nan')
         print("timeavg has no values within temporal range") ;sys.stdout.flush()
     #
     return( qtyavg )
@@ -23873,10 +23899,7 @@ def timeavg( qty, ts, fti, ftf, step = 1 ):
         qtyavg = qtycond[0];
     else:
         # then no value to report, so set to zero and report problem
-        if(len(qty.shape))==1:
-            qtyavg = 0.0*qty[0]*float('nan')
-        else:
-            qtyavg = 0.0*qty[0,:]*float('nan')
+        qtyavg = 0*qty[0,:]*float('nan')
         print("timeavg has no values within temporal range") ;sys.stdout.flush()
     #
     return( qtyavg )
@@ -23905,10 +23928,7 @@ def timeavg_sqrt( qty0, ts, fti, ftf, step = 1 ):
         qtyavg = qtycond[0];
     else:
         # then no value to report, so set to zero and report problem
-        if(len(qty.shape))==1:
-            qtyavg = 0.0*qty[0]*float('nan')
-        else:
-            qtyavg = 0.0*qty[0,:]*float('nan')
+        qtyavg = 0*qty[0,:]*float('nan')
         print("timeavg has no values within temporal range") ;sys.stdout.flush()
     #
     return( qtyavg )
@@ -27719,11 +27739,11 @@ def tutorial1():
 
 def tutorial1alt():
     # first load grid file
-    grid3d("gdump")
+    grid3d("gdump.bin")
     # now try loading a single fieldline file
-    rfd("fieldline0000.bin")
+    rfd("fieldline5000.bin")
     # now plot something you read-in
-    plt.close(1)
+    plt.clf()
     plt.figure(1)
     lrho=np.log10(rho)
     aphi = fieldcalc() # keep sign information
@@ -27773,14 +27793,15 @@ def tutorial1alt():
     #
     ##############################
     #nxout=100
-    nxout=70
-    myx=r[0:nxout:,:,0]*np.sin(h[0:nxout,:,0])*np.cos(ph[0:nxout,:,0])
-    myy=r[0:nxout,:,0]*np.sin(h[0:nxout,:,0])*np.sin(ph[0:nxout,:,0])
-    myz=r[0:nxout,:,0]*np.cos(h[0:nxout,:,0])
+    nxin=iofr(5)
+    nxout=iofr(30)
+    myx=r[nxin:nxout:,:,0]*np.sin(h[nxin:nxout,:,0])*np.cos(ph[nxin:nxout,:,0])
+    myy=r[nxin:nxout,:,0]*np.sin(h[nxin:nxout,:,0])*np.sin(ph[nxin:nxout,:,0])
+    myz=r[nxin:nxout,:,0]*np.cos(h[nxin:nxout,:,0])
     #
     #############################
     #
-    if 1==1:
+    if 1==0:
         myfun=qmri3ddisk
         myfun[myfun>10]=10
         myfun[myfun<1E-4]=1E-4
@@ -27793,9 +27814,9 @@ def tutorial1alt():
         myfun[bsq/rho>1]=0
         myfun[rho<1E-5]=0
     if 1==0:
-        myfun=lrho[0:nxout,:,0]
+        myfun=lrho
     if 1==0:
-        myfun=np.log10(1E-5+1.0/beta[0:nxout,:,0])
+        myfun=np.log10(1E-5+1.0/beta)
     #
     if 1==0:
         myfun=idx2mri
@@ -27803,18 +27824,33 @@ def tutorial1alt():
         myfun[myfun<1E-4]=1E-4
         myfun[bsq/rho>1]=0
         myfun[rho<1E-5]=0
+    if 1==1:
+        numMag=jabs(-bu[1]*np.sqrt(gv3[1,1])*bd[3]*np.sqrt(gn3[3,3]))
+        denMR=(bsq*0.5+(gam-1.0)*ug)
+        amag=numMag/denMR
+	avgexists=checkiffullavgexists()
+	if avgexists==1:
+            loadavg()
+            loadedavg=1
+            numRey=jabs(rho*(uu[1]-avg_uu[1])*np.sqrt(gv3[1,1])*(ud[3]-avg_ud[3])*np.sqrt(gn3[3,3]))
+        else:
+            numRey=jabs(rho*(uu[1])*np.sqrt(gv3[1,1])*(ud[3])*np.sqrt(gn3[3,3]))
+        arey=numRey/denMR
+        myfun=avg_uu[1]#amag+arey
+    if 1==0:
+	myfun=bu[2]*np.sqrt(gv3[2,2])
     #
     #
-    myfun2=aphi
+    #myfun2=aphi
     #
     #
     #######################################
     ax = plt.gca()
-    ax.pcolor(myx,myz,myfun[0:nxout,:,0])
-    plc(myfun[0:nxout,:,0],xcoord=myx,ycoord=myz,ax=ax,cb=True,nc=50)
+    ax.pcolor(myx,myz,myfun[nxin:nxout,:,0])
+    plc(myfun[nxin:nxout,:,0],xcoord=myx,ycoord=myz,ax=ax,cb=True,nc=50)
+    plt.title("stress")
     #plco(lrho,cb=True,nc=50)
     #
-    plc(myfun2[0:nxout,:,0],xcoord=myx,ycoord=myz,ax=ax,colors='k',nc=50)
     #
 
 def tutorial2():
@@ -27865,25 +27901,14 @@ def tutorial2():
         mydP=r*np.sin(h)*dxdxp[3,3]*_dx3
         omegarot=uu[3]/uu[0]*dxdxp[3,3]
         #
-        lambda2=np.sqrt(val22)*2*np.pi/omegarot
-        #
-        idx2mri = lambda2/mydH
-        idx2mri[idx2mri>20]=20
-        idx2mri[idx2mri<0]=0
-        #
-        myH=0.3*r
-        iq2mri = myH/lambda2
-        iq2mri[iq2mri>2]=2
-        iq2mri[iq2mri<0]=0
-        #
+        idx2mri = np.sqrt(val22)*2*np.pi/omegarot/mydH
     #
     #
     #
     # now plot something you read-in
     plt.figure(1)
     #lrho=qmri3ddisk
-    #lrho=idx2mri
-    lrho=iq2mri
+    lrho=idx2mri
     plco(lrho,cb=True,nc=50)
     aphi = fieldcalc() # keep sign information
     plc(aphi,colors='k')
@@ -28335,21 +28360,6 @@ if __name__ == "__main__":
     #    sys.exit(main())
     main()
 
-def tutorialgen(path=None,fil=None):
-    # first load grid file
-    grid3d("gdump.bin")
-    print("t=%g" % t );
-    # now try loading a single fieldline file
-    rfd(fil)
-    # now plot something you read-in
-    plt.figure(1)
-    lrho=np.log(rho)
-    plco(lrho,cb=True,nc=50)
-    #plco(ug/rho,cb=True,nc=50)
-    #plco(uu[0],cb=True,nc=50)
-    #aphi = fieldcalc() # keep sign information
-    #plc(aphi,colors='k')
-
 
 # to run this, do, e.g.:
 # ipython
@@ -28719,3 +28729,15 @@ def testcursor2():
     cursor = FollowDotCursor(ax, x, y)
     plt.show()
 
+def rad_avg():
+    """Function to compute and save the radial average of Reynolds and Maxwell Stresses and the vertical B field (lab frame) in the desired range from r1 to r2"""
+    ###Megan's test function to be used in iPython
+    from scipy import constants as con
+    grid3d("gdump.bin")
+    rfd("fieldline0000.bin")
+    #r1, r2 = r_range()
+    rhor=1+(1-a**2)**0.5
+    ihor = np.floor(iofr(rhor)+0.5)
+    #qtymem=getqtyvstime(ihor,0.2)
+    #plotqtyvstime(qtymem,whichplot=None)
+    return r

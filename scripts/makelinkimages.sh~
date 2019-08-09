@@ -9,7 +9,7 @@ do
 done
 
 rm -rf imagesmall.mp4
-avconv -i imagesmall%d.png -r 25 imagesmall.mp4
+ffmpeg -i imagesmall%d.png -r 25 -sameq imagesmall.mp4
 
 #exit
 
@@ -24,5 +24,5 @@ do
 done
 
 rm -rf imagenormal.mp4
-avconv -i imagenormal%d.png -r 25 imagenormal.mp4
+ffmpeg -i imagenormal%d.png -r 25 -sameq imagenormal.mp4
 
