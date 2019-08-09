@@ -1,0 +1,76 @@
+#coordinate conversion functions
+#Add these functions to your copy of __init__.py - I think Roman knew of a way to call __init__.py from another script, but I could never make it work, so I just run __init__.py with my functions added at the end
+#Look at the function fixprobarray() to see how they are used.
+
+#####This function makes sure that the quantities you're working with are 3D arrays. Once you have (r,theta,phi) 3D, you can convert to (x,y,z)
+def mk2d3d(version2d):
+    return(np.array([version2d[:,:,0].T,]*nz).T)
+
+#####Here's how the function above is used
+myr3d=mk2d3d(r)
+myh3d=mk2d3d(h)
+myph3d=mk2d3d(ph)
+
+myx=myr3d*np.sin(myh3d)*np.cos(myph3d)
+myy=myr3d*np.sin(myh3d)*np.sin(myph3d)
+myz=myr3d*np.cos(myh3d)
+
+#####These functions change the grid spacing from the variable size used in the fieldline files to equally spaced cells. It only does a single 2D slice, though.
+def reinterpxy(vartointerp,extent,ncell,domask=1,interporder='cubic'):
+    global xi,yi,zi
+    #grid3d("gdump")
+    #rfd("fieldline0250.bin")
+    xraw=r*np.sin(h)*np.cos(ph)
+    yraw=r*np.sin(h)*np.sin(ph)
+    #2 cells below the midplane
+    x=xraw[:,ny/2,:].view().reshape(-1)
+    y=yraw[:,ny/2,:].view().reshape(-1)
+    var=vartointerp[:,ny/2,:].view().reshape(-1)
+    #mirror
+    if nz*_dx3*dxdxp[3,3,0,0,0] < 0.99 * 2 * np.pi:
+        x=np.concatenate((-x,x))
+        y=np.concatenate((-y,y))
+        var=np.concatenate((var,var))
+    # define grid.
+    xi = np.linspace(extent[0], extent[1], ncell)
+    yi = np.linspace(extent[2], extent[3], ncell)
+    # grid the data.
+    zi = griddata((x, y), var, (xi[None,:], yi[:,None]), method=interporder)
+    #zi[interior] = np.ma.masked
+    if domask!=0:
+        interior = np.sqrt((xi[None,:]**2) + (yi[:,None]**2)) < (1+np.sqrt(1-a**2))*domask
+        varinterpolated = ma.masked_where(interior, zi)
+    else:
+        varinterpolated = zi
+    return(varinterpolated)
+
+def reinterpxyhor(vartointerp,extent,ncell,domask=1,interporder='cubic'):
+    '''function made to project qtys on the bh horizon down to the midplane - created by Megan 2/29/16'''
+    global xi,yi,zi
+    #grid3d("gdump")
+    #rfd("fieldline0250.bin")
+    rhor=1+(1-a**2)**0.5
+    ihor=np.floor(iofr(rhor)+0.5)
+    xraw=r*np.sin(h)*np.cos(ph)
+    yraw=r*np.sin(h)*np.sin(ph)
+    #restrict values to BH upper hemisphere
+    x=xraw[ihor,0:ny/2,:].view().reshape(-1)
+    y=yraw[ihor,0:ny/2,:].view().reshape(-1)
+    var=vartointerp[ihor,0:ny/2,:].view().reshape(-1)
+    #mirror
+    if nz*_dx3*dxdxp[3,3,0,0,0] < 0.99 * 2 * np.pi:
+        x=np.concatenate((-x,x))
+        y=np.concatenate((-y,y))
+        var=np.concatenate((var,var))
+    # define grid.
+    xi = np.linspace(extent[0], extent[1], ncell)
+    yi = np.linspace(extent[2], extent[3], ncell)
+    # grid the data.
+    zi = griddata((x, y), var, (xi[None,:], yi[:,None]), method=interporder)
+    #zi[interior] = np.ma.masked
+    if domask!=0:
+        interior = np.sqrt((xi[None,:]**2) + (yi[:,None]**2)) > (1+np.sqrt(1-a**2))*domask
+        varinterpolated = ma.masked_where(interior, zi)
+    else:
+        varinterpolated = zi
+    return(varinterpolated)
