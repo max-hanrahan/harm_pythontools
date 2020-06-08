@@ -1,3 +1,5 @@
+###is actually old - also doesn't have MADNT mRT stuff (Megan 6/5/20)
+
 def setpythonpath():
     # PYTHONPATH from os environment might include arbitrary paths, including those not accessible on supercomputer by a compute node, so set manually
     # Assumes if user needs local "py" that copied to local directory, then force use of that version.

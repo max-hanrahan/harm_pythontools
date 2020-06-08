@@ -1,3 +1,6 @@
+###The version I actually used for the MADNT mRT paper
+###needs a lot of commenting and to updated to work with Python3 (Megan 6/5/20)
+
 def setpythonpath():
     # PYTHONPATH from os environment might include arbitrary paths, including those not accessible on supercomputer by a compute node, so set manually
     # Assumes if user needs local "py" that copied to local directory, then force use of that version.
@@ -119,7 +122,7 @@ def runglobalsetup(argv=None):
     #
     #
     # force python path to be set before loading rest of file, including modules.
-    setpythonpath()
+    #setpythonpath()
     #
     global runtype
     if len(sys.argv[1:])>0:
@@ -185,7 +188,7 @@ from matplotlib import mlab
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
-from streamlines import streamplot
+from streamlines import streamplot #streamlines is from harm_pythontools, not actually a python package
 from streamlines import fstreamplot
 #rc('verbose', level='debug')
 #rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
@@ -208,7 +211,7 @@ from scipy.optimize import leastsq
 from scipy.optimize import curve_fit
 from matplotlib.gridspec import GridSpec
 import matplotlib.pyplot as plt
-from matplotlib import mpl
+import matplotlib as mpl
 from matplotlib import cm
 from numpy import ma
 import matplotlib.colors as colors
@@ -216,7 +219,7 @@ from matplotlib.colors import Normalize
 import os,glob
 import pylab
 import sys
-import streamlines
+import streamlines #again, from harm_pythontools
 from matplotlib.patches import Ellipse
 
 import re
@@ -238,7 +241,7 @@ from scipy.special import sph_harm,lpmn,gammaln
 #from numpy import *
 #from mpl_toolkits.axisartist import *
 
-import resource
+#import resource #Unix only, used for printusage (called a lot, but maybe not needed?)
 import random as rnd
 
 
@@ -29790,50 +29793,50 @@ def stressvtime(fnumber):
     diskeqcondition=diskcondition
     ##############################
     ###choose the radial extent of the plot
-    nxin=iofr(10)
-    nxout=iofr(40)
+    nxin=int(iofr(10))
+    nxout=int(iofr(40))
     ###choose extent in r,theta:
     hoverr=0.1
     hmin=np.pi/2 - hoverr
     hmax=np.pi/2 + hoverr
-    mhin=jofh(hmin,nxout)
-    mhout=jofh(hmax,nxout)
+    mhin=int(jofh(hmin,nxout))
+    mhout=int(jofh(hmax,nxout))
 
-    loadavg()
+    #loadavg()
     ###integrated stress
     ibeta=0.5*bsq/pg #for masking
     br=bu[1]*np.sqrt(gv3[1,1])
-    brpert=(bu[1]-avg_bu[1])*np.sqrt(gv3[1,1])
+    #brpert=(bu[1]-avg_bu[1])*np.sqrt(gv3[1,1])
     bz=-bu[2]*np.sqrt(gv3[2,2])
-    bzpert=-(bu[2]-avg_bu[2])*np.sqrt(gv3[2,2])
+    #bzpert=-(bu[2]-avg_bu[2])*np.sqrt(gv3[2,2])
     bphi=bd[3]*np.sqrt(gn3[3,3])
-    bphipert=(bd[3]-avg_bd[3])*np.sqrt(gn3[3,3])
+    #bphipert=(bd[3]-avg_bd[3])*np.sqrt(gn3[3,3])
 
     integrand_rp=-br*bphi*gdet*_dx1*_dx2*_dx3
-    integrand_rp_pert=-brpert*bphipert*gdet*_dx1*_dx2*_dx3
+    #integrand_rp_pert=-brpert*bphipert*gdet*_dx1*_dx2*_dx3
     bubble_rp=ma.masked_where(ibeta<10,integrand_rp)
     disk_rp=ma.masked_where(ibeta>=10,integrand_rp)
     nummagrp_in=np.sum(bubble_rp[nxin:nxout,mhin:mhout,:])
     nummagrp_out=np.sum(disk_rp[nxin:nxout,mhin:mhout,:])
-    bubble_rp_pert=ma.masked_where(ibeta<10,integrand_rp_pert)
-    disk_rp_pert=ma.masked_where(ibeta>=10,integrand_rp_pert)
-    nummagrp_pert_in=np.sum(bubble_rp_pert[nxin:nxout,mhin:mhout,:])
-    nummagrp_pert_out=np.sum(disk_rp_pert[nxin:nxout,mhin:mhout,:])
+    #bubble_rp_pert=ma.masked_where(ibeta<10,integrand_rp_pert)
+    #disk_rp_pert=ma.masked_where(ibeta>=10,integrand_rp_pert)
+    #nummagrp_pert_in=np.sum(bubble_rp_pert[nxin:nxout,mhin:mhout,:])
+    #nummagrp_pert_out=np.sum(disk_rp_pert[nxin:nxout,mhin:mhout,:])
 
     integrand_zp=-bz*bphi*gdet*_dx1*_dx2*_dx3
     bubble_zp=ma.masked_where(ibeta<10,integrand_zp)
     disk_zp=ma.masked_where(ibeta>=10,integrand_zp)
     nummagzp_in=np.sum(bubble_zp[nxin:nxout,ny/2:mhout,:])-np.sum(bubble_zp[nxin:nxout,mhin:ny/2,:])
     nummagzp_out=np.sum(disk_zp[nxin:nxout,ny/2:mhout,:])-np.sum(disk_zp[nxin:nxout,mhin:ny/2,:])
-    integrand_zp_pert=-bzpert*bphipert*gdet*_dx1*_dx2*_dx3
-    bubble_zp_pert=ma.masked_where(ibeta<10,integrand_zp_pert)
-    disk_zp_pert=ma.masked_where(ibeta>=10,integrand_zp_pert)
-    nummagzp_pert_in=np.sum(bubble_zp_pert[nxin:nxout,ny/2:mhout,:])-np.sum(bubble_zp_pert[nxin:nxout,mhin:ny/2,:])
-    nummagzp_pert_out=np.sum(disk_zp_pert[nxin:nxout,ny/2:mhout,:])-np.sum(disk_zp_pert[nxin:nxout,mhin:ny/2,:])
+    #integrand_zp_pert=-bzpert*bphipert*gdet*_dx1*_dx2*_dx3
+    #bubble_zp_pert=ma.masked_where(ibeta<10,integrand_zp_pert)
+    #disk_zp_pert=ma.masked_where(ibeta>=10,integrand_zp_pert)
+    #nummagzp_pert_in=np.sum(bubble_zp_pert[nxin:nxout,ny/2:mhout,:])-np.sum(bubble_zp_pert[nxin:nxout,mhin:ny/2,:])
+    #nummagzp_pert_out=np.sum(disk_zp_pert[nxin:nxout,ny/2:mhout,:])-np.sum(disk_zp_pert[nxin:nxout,mhin:ny/2,:])
 
-    ptot=0.5*avg_bsq+(gam-1.0)*avg_ug
-    integrand_denom=ptot*gdet*_dx1*_dx2*_dx3
-    denom=np.sum(integrand_denom[nxin:nxout,mhin:mhout,:])
+    #ptot=0.5*avg_bsq+(gam-1.0)*avg_ug
+    #integrand_denom=ptot*gdet*_dx1*_dx2*_dx3
+    #denom=np.sum(integrand_denom[nxin:nxout,mhin:mhout,:])
     
     ###masked quantities for plotting
     brmsk=ma.masked_where(ibeta<10,br)
@@ -29841,30 +29844,31 @@ def stressvtime(fnumber):
     bphimsk=ma.masked_where(ibeta<10,bphi)
 
     ###normalized stress in/out of bubble
-    alphamagrp_bubble=nummagrp_in/denom
-    alphamagrp_disk=nummagrp_out/denom
-    alphamagrp_pert_bubble=nummagrp_pert_in/denom
-    alphamagrp_pert_disk=nummagrp_pert_out/denom
+    alphamagrp_bubble=nummagrp_in#/denom
+    alphamagrp_disk=nummagrp_out#/denom
+    #alphamagrp_pert_bubble=nummagrp_pert_in/denom
+    #alphamagrp_pert_disk=nummagrp_pert_out/denom
 
-    alphamagzp_bubble=nummagzp_in/denom
-    alphamagzp_disk=nummagzp_out/denom
-    alphamagzp_pert_bubble=nummagzp_pert_in/denom
-    alphamagzp_pert_disk=nummagzp_pert_out/denom
+    alphamagzp_bubble=nummagzp_in#/denom
+    alphamagzp_disk=nummagzp_out#/denom
+    #alphamagzp_pert_bubble=nummagzp_pert_in/denom
+    #alphamagzp_pert_disk=nummagzp_pert_out/denom
 
     #total stress
     nummagrp=np.sum(integrand_rp[nxin:nxout,mhin:mhout,:])
-    nummagrp_pert=np.sum(integrand_rp_pert[nxin:nxout,mhin:mhout,:])
-    alphamagrp=nummagrp/denom
-    alphamagrp_pert=nummagrp_pert/denom
+    #nummagrp_pert=np.sum(integrand_rp_pert[nxin:nxout,mhin:mhout,:])
+    alphamagrp=nummagrp#/denom
+    #alphamagrp_pert=nummagrp_pert/denom
 
     nummagzp=np.sum(integrand_zp[nxin:nxout,mhin:mhout,:])-np.sum(integrand_zp[nxin:nxout,mhin:ny/2,:])
-    nummagzp_pert=np.sum(integrand_zp_pert[nxin:nxout,ny/2:mhout,:])-np.sum(integrand_zp_pert[nxin:nxout,mhin:ny/2,:])
-    alphamagzp=nummagzp/denom
-    alphamagzp_pert=nummagzp_pert/denom
+    #nummagzp_pert=np.sum(integrand_zp_pert[nxin:nxout,ny/2:mhout,:])-np.sum(integrand_zp_pert[nxin:nxout,mhin:ny/2,:])
+    alphamagzp=nummagzp#/denom
+    #alphamagzp_pert=nummagzp_pert/denom
     #print alphamagrp_bubble, alphamagrp_disk
-    myfun=(-br*bphi)*r**2/np.average(ptot[ihor,ny/2,:])
-    myfun[myfun>3]=3
-    myfun[myfun<-3]=-3
+    
+    myfun=(-br*bphi)*r**2#/np.average(ptot[ihor,ny/2,:])
+    #myfun[myfun>3]=3
+    #myfun[myfun<-3]=-3
     ###########################
     ###using slice through equatorial plane
     xy_x=r[nxin:nxout,ny/2,:]*np.sin(h[nxin:nxout,ny/2,:])*np.cos(ph[nxin:nxout,ny/2,:])
@@ -29880,7 +29884,7 @@ def stressvtime(fnumber):
     plt.ylabel(r"$y [r_g]$",ha='left',labelpad=20,fontsize=14)
     plt.savefig('amag'+str(fnumber)+'.png')
 
-    return fnumber, alphamagrp, alphamagrp_pert, alphamagzp, alphamagzp_pert
+    return fnumber, alphamagrp, alphamagzp
     #return br,bz,bphi
 
 def fixprobarray(fnumber,ncell):
