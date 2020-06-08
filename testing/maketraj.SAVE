@@ -1,0 +1,82 @@
+#Vis5D 4.3 Tcl save file
+
+
+
+set W  [expr 8]
+set V  [expr 9]
+set U  [expr 10]
+set W2  [expr 11]
+set V2  [expr 12]
+set U2  [expr 13]
+vis5d_set_wind_vars_and_owners $dtx $ctx $U $ctx $V $ctx $W $ctx $U2 $ctx $V2 $ctx $W2 $ctx $U2 $ctx $V2 $ctx $W2
+
+
+vis5d_graphics_mode $dtx VIS5D_CLOCK VIS5D_OFF
+vis5d_graphics_mode $dtx VIS5D_PRETTY VIS5D_ON
+
+#constants
+set time [expr 0]
+set var [expr 0]
+set pi 3.14159265
+set ixmin [expr -40]
+set ixmax [expr 40]
+set iymin [expr -40]
+set iymax [expr 40]
+set izmin [expr -40]
+set izmax [expr 40]
+
+#min row,col,lev
+set rowmin [expr 0]
+set colmin [expr 0]
+set levmin [expr 0]
+set triple "$rowmin $colmin $levmin"
+set xyz [vis5d_grid_to_xyz $dtx $time $var $triple]
+foreach {xmin ymin zmin} "$xyz" break
+
+# max row,col,lev
+set numrow [vis5d_get_dtx_grid_rows $dtx]
+set numcol [vis5d_get_dtx_grid_columns $dtx]
+set numlev [vis5d_get_dtx_grid_levels $dtx]
+
+set rowmax [expr $numrow-1]
+set colmax [expr $numcol-1]
+set levmax [expr $numlev-1]
+set triple "$rowmax $colmax $levmax"
+set xyz [vis5d_grid_to_xyz $dtx $time $var $triple]
+foreach {xmax ymax zmax} "$xyz" break
+
+#initial conditions
+set fldph [expr 20.0]
+set finalph [expr 2.0*$pi ]
+set dph [expr $finalph/$fldph]
+#set startz [expr -1.5]
+#set finalz [expr 1.5]
+#set numz [expr 2.0]
+#set dz [expr $finalz/$numz]
+set z [expr 0]
+
+for {set ph 0.1} {$ph < $finalph} {set ph [expr $ph+$dph]} {
+set R [expr 5.0]
+
+set userx [expr $R*cos($ph)]
+set usery [expr $R*sin($ph)]
+set userz [expr $z]
+
+set v5dorderx [expr $userz]
+set v5dordery [expr $usery]
+set v5dorderz [expr $userx]
+
+set v5dx [expr ($v5dorderx-$ixmin)/(1.0*$ixmax-$ixmin)*(1.0*$xmax-$xmin) + $xmin]
+set v5dy [expr ($v5dordery-$iymin)/(1.0*$iymax-$iymin)*(1.0*$ymin-$ymax) + $ymax]
+set v5dz [expr ($v5dorderz-$izmin)/(1.0*$izmax-$izmin)*(1.0*$zmax-$zmin) + $zmin]
+set triple "$v5dx $v5dy $v5dz"
+
+#get internal position
+set pos [vis5d_xyz_to_grid data_context $time $var $triple]
+foreach {v5drow v5dcol v5dlev} "$pos" break
+
+#trajectory
+vis5d_set_traj $dtx 1 1 0
+vis5d_make_traj $dtx $v5drow $v5dcol $v5dlev $time 0
+vis5d_enable_graphics $ctx VIS5D_TRAJ 0 VIS5D_ON
+}
