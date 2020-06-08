@@ -29802,41 +29802,41 @@ def stressvtime(fnumber):
     mhin=int(jofh(hmin,nxout))
     mhout=int(jofh(hmax,nxout))
 
-    #loadavg()
+    loadavg()
     ###integrated stress
     ibeta=0.5*bsq/pg #for masking
     br=bu[1]*np.sqrt(gv3[1,1])
-    #brpert=(bu[1]-avg_bu[1])*np.sqrt(gv3[1,1])
+    brpert=(bu[1]-avg_bu[1])*np.sqrt(gv3[1,1])
     bz=-bu[2]*np.sqrt(gv3[2,2])
-    #bzpert=-(bu[2]-avg_bu[2])*np.sqrt(gv3[2,2])
+    bzpert=-(bu[2]-avg_bu[2])*np.sqrt(gv3[2,2])
     bphi=bd[3]*np.sqrt(gn3[3,3])
-    #bphipert=(bd[3]-avg_bd[3])*np.sqrt(gn3[3,3])
+    bphipert=(bd[3]-avg_bd[3])*np.sqrt(gn3[3,3])
 
     integrand_rp=-br*bphi*gdet*_dx1*_dx2*_dx3
-    #integrand_rp_pert=-brpert*bphipert*gdet*_dx1*_dx2*_dx3
+    integrand_rp_pert=-brpert*bphipert*gdet*_dx1*_dx2*_dx3
     bubble_rp=ma.masked_where(ibeta<10,integrand_rp)
     disk_rp=ma.masked_where(ibeta>=10,integrand_rp)
     nummagrp_in=np.sum(bubble_rp[nxin:nxout,mhin:mhout,:])
     nummagrp_out=np.sum(disk_rp[nxin:nxout,mhin:mhout,:])
-    #bubble_rp_pert=ma.masked_where(ibeta<10,integrand_rp_pert)
-    #disk_rp_pert=ma.masked_where(ibeta>=10,integrand_rp_pert)
-    #nummagrp_pert_in=np.sum(bubble_rp_pert[nxin:nxout,mhin:mhout,:])
-    #nummagrp_pert_out=np.sum(disk_rp_pert[nxin:nxout,mhin:mhout,:])
+    bubble_rp_pert=ma.masked_where(ibeta<10,integrand_rp_pert)
+    disk_rp_pert=ma.masked_where(ibeta>=10,integrand_rp_pert)
+    nummagrp_pert_in=np.sum(bubble_rp_pert[nxin:nxout,mhin:mhout,:])
+    nummagrp_pert_out=np.sum(disk_rp_pert[nxin:nxout,mhin:mhout,:])
 
     integrand_zp=-bz*bphi*gdet*_dx1*_dx2*_dx3
     bubble_zp=ma.masked_where(ibeta<10,integrand_zp)
     disk_zp=ma.masked_where(ibeta>=10,integrand_zp)
     nummagzp_in=np.sum(bubble_zp[nxin:nxout,ny/2:mhout,:])-np.sum(bubble_zp[nxin:nxout,mhin:ny/2,:])
     nummagzp_out=np.sum(disk_zp[nxin:nxout,ny/2:mhout,:])-np.sum(disk_zp[nxin:nxout,mhin:ny/2,:])
-    #integrand_zp_pert=-bzpert*bphipert*gdet*_dx1*_dx2*_dx3
-    #bubble_zp_pert=ma.masked_where(ibeta<10,integrand_zp_pert)
-    #disk_zp_pert=ma.masked_where(ibeta>=10,integrand_zp_pert)
-    #nummagzp_pert_in=np.sum(bubble_zp_pert[nxin:nxout,ny/2:mhout,:])-np.sum(bubble_zp_pert[nxin:nxout,mhin:ny/2,:])
-    #nummagzp_pert_out=np.sum(disk_zp_pert[nxin:nxout,ny/2:mhout,:])-np.sum(disk_zp_pert[nxin:nxout,mhin:ny/2,:])
+    integrand_zp_pert=-bzpert*bphipert*gdet*_dx1*_dx2*_dx3
+    bubble_zp_pert=ma.masked_where(ibeta<10,integrand_zp_pert)
+    disk_zp_pert=ma.masked_where(ibeta>=10,integrand_zp_pert)
+    nummagzp_pert_in=np.sum(bubble_zp_pert[nxin:nxout,ny/2:mhout,:])-np.sum(bubble_zp_pert[nxin:nxout,mhin:ny/2,:])
+    nummagzp_pert_out=np.sum(disk_zp_pert[nxin:nxout,ny/2:mhout,:])-np.sum(disk_zp_pert[nxin:nxout,mhin:ny/2,:])
 
-    #ptot=0.5*avg_bsq+(gam-1.0)*avg_ug
-    #integrand_denom=ptot*gdet*_dx1*_dx2*_dx3
-    #denom=np.sum(integrand_denom[nxin:nxout,mhin:mhout,:])
+    ptot=0.5*avg_bsq+(gam-1.0)*avg_ug
+    integrand_denom=ptot*gdet*_dx1*_dx2*_dx3
+    denom=np.sum(integrand_denom[nxin:nxout,mhin:mhout,:])
     
     ###masked quantities for plotting
     brmsk=ma.masked_where(ibeta<10,br)
@@ -29844,31 +29844,31 @@ def stressvtime(fnumber):
     bphimsk=ma.masked_where(ibeta<10,bphi)
 
     ###normalized stress in/out of bubble
-    alphamagrp_bubble=nummagrp_in#/denom
-    alphamagrp_disk=nummagrp_out#/denom
-    #alphamagrp_pert_bubble=nummagrp_pert_in/denom
-    #alphamagrp_pert_disk=nummagrp_pert_out/denom
+    alphamagrp_bubble=nummagrp_in/denom
+    alphamagrp_disk=nummagrp_out/denom
+    alphamagrp_pert_bubble=nummagrp_pert_in/denom
+    alphamagrp_pert_disk=nummagrp_pert_out/denom
 
-    alphamagzp_bubble=nummagzp_in#/denom
-    alphamagzp_disk=nummagzp_out#/denom
-    #alphamagzp_pert_bubble=nummagzp_pert_in/denom
-    #alphamagzp_pert_disk=nummagzp_pert_out/denom
+    alphamagzp_bubble=nummagzp_in/denom
+    alphamagzp_disk=nummagzp_out/denom
+    alphamagzp_pert_bubble=nummagzp_pert_in/denom
+    alphamagzp_pert_disk=nummagzp_pert_out/denom
 
-    #total stress
+    ###total stress
     nummagrp=np.sum(integrand_rp[nxin:nxout,mhin:mhout,:])
-    #nummagrp_pert=np.sum(integrand_rp_pert[nxin:nxout,mhin:mhout,:])
-    alphamagrp=nummagrp#/denom
-    #alphamagrp_pert=nummagrp_pert/denom
+    nummagrp_pert=np.sum(integrand_rp_pert[nxin:nxout,mhin:mhout,:])
+    alphamagrp=nummagrp/denom
+    alphamagrp_pert=nummagrp_pert/denom
 
     nummagzp=np.sum(integrand_zp[nxin:nxout,mhin:mhout,:])-np.sum(integrand_zp[nxin:nxout,mhin:ny/2,:])
-    #nummagzp_pert=np.sum(integrand_zp_pert[nxin:nxout,ny/2:mhout,:])-np.sum(integrand_zp_pert[nxin:nxout,mhin:ny/2,:])
-    alphamagzp=nummagzp#/denom
-    #alphamagzp_pert=nummagzp_pert/denom
+    nummagzp_pert=np.sum(integrand_zp_pert[nxin:nxout,ny/2:mhout,:])-np.sum(integrand_zp_pert[nxin:nxout,mhin:ny/2,:])
+    alphamagzp=nummagzp/denom
+    alphamagzp_pert=nummagzp_pert/denom
     #print alphamagrp_bubble, alphamagrp_disk
     
-    myfun=(-br*bphi)*r**2#/np.average(ptot[ihor,ny/2,:])
-    #myfun[myfun>3]=3
-    #myfun[myfun<-3]=-3
+    myfun=(-br*bphi)*r**2/np.average(ptot[ihor,ny/2,:])
+    myfun[myfun>3]=3
+    myfun[myfun<-3]=-3
     ###########################
     ###using slice through equatorial plane
     xy_x=r[nxin:nxout,ny/2,:]*np.sin(h[nxin:nxout,ny/2,:])*np.cos(ph[nxin:nxout,ny/2,:])
