@@ -2,12 +2,12 @@
 # MUST RUN THIS WITH "bash" not "sh" since on some systems that calls "dash" that doesn't correctly handle $RANDOM or other things
 
 
-user="jmckinne"
-userbatch="jmckinn"
-emailaddr="pseudotensor@gmail.com"
-remotehost="ki-jmck.slac.stanford.edu"
-globushost="pseudotensor#ki-jmck"
-globusremote="pseudotensor@cli.globusonline.org"
+user="megan"
+#userbatch="jmckinn"
+emailaddr="meganmarshall20@gmail.com"
+#remotehost="ki-jmck.slac.stanford.edu"
+#globushost="pseudotensor#ki-jmck"
+#globusremote="pseudotensor@cli.globusonline.org"
 
 # note that ubuntu defaults to dash after update.  Also causes \b to appear as ^H unlike bash.  Can't do \\b either -- still appears as ^H
 

@@ -16,7 +16,7 @@
 
 user=$USER
 userbatch=${USER:2:6}
-emailaddr="pseudotensor@gmail.com"
+emailaddr="meganmarshall20@gmail.com"
 
 EXPECTED_ARGS=18
 E_BADARGS=65
@@ -305,7 +305,7 @@ fi
 if [ $system -eq 3 ]
 then
     # 4 for thickdisk7 (until new memory put in)
-    numcorespernode=16  # MAVARA
+    numcorespernode=1  # MAVARA
     numnodes=1
     thequeue="none"
 fi
@@ -1744,7 +1744,7 @@ numfiles=`find dumps/ -name "fieldline*.bin"|wc -l`
 echo "NUMFILES=$numfiles"
 
 #itemspergroup=$(( 1 )) # MAVARA
-itemspergroup=$(( 20 ))
+itemspergroup=$(( 1 ))
 
 # catch too small number of files
 # must match __init__.py

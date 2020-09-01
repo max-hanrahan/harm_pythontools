@@ -1547,7 +1547,7 @@ def roundto3foreta(x):
 def get2davg(usedefault=0,whichgroup=-1,whichgroups=-1,whichgroupe=-1,itemspergroup=20,domerge=False):
     if whichgroup >= 0:
         whichgroups = whichgroup
-        whichgroupe = whichgroup + 1
+        whichgroupe = whichgroupe + 1
     elif whichgroupe < 0:
         whichgroupe = whichgroups + 1
     #check values for sanity
@@ -1589,7 +1589,7 @@ def get2davg(usedefault=0,whichgroup=-1,whichgroups=-1,whichgroupe=-1,itemspergr
     for (i,g) in enumerate(myrange):
         print("i=%d g=%d" % (i,g)) ; sys.stdout.flush()
         avgone=get2davgone( whichgroup = g, itemspergroup = itemspergroup )
-        if avgone == None:
+        if avgone.any() == None:
             continue
         if firstavgone==1:
             avgtot = np.zeros_like(avgone)
@@ -1691,8 +1691,8 @@ def assignavg2dvars(avgmem):
     # 4
     avg_rho=avgmem[i,:,:,None];i+=1 # i=1
     avg_ug=avgmem[i,:,:,None];i+=1  # i=2
-    avg_urad=avgmem[i,:,:,None];i+=1  # i=2
-    avg_bsq=avgmem[i,:,:,None];i+=1 # i=3
+    avg_urad=avgmem[i,:,:,None];i+=1  # i=3
+    avg_bsq=avgmem[i,:,:,None];i+=1 # i=4
     avg_unb=avgmem[i,:,:,None];i+=1
     # 4*4=16
     n=4
@@ -5416,7 +5416,7 @@ def reinterpxyhor(vartointerp,extent,ncell,domask=1,interporder='cubic'):
     #grid3d("gdump")
     #rfd("fieldline0250.bin")
     rhor=1+(1-a**2)**0.5
-    ihor=np.floor(iofr(rhor)+0.5)
+    ihor=int(np.floor(iofr(rhor)+0.5))
     xraw=r*np.sin(h)*np.cos(ph)
     yraw=r*np.sin(h)*np.sin(ph)
     #restrict values to BH upper hemisphere
@@ -28008,7 +28008,7 @@ def tutorial1alt():
     # first load grid file
     grid3d("gdump.bin",use2d=True)
     # now try loading a single fieldline file
-    rfd("fieldline7034.bin")
+    rfd("fieldline13682.bin")
     # now plot something you read-in
     plt.clf()
     plt.figure(1)
@@ -28060,8 +28060,8 @@ def tutorial1alt():
     #
     ##############################
     #nxout=100
-    nxin=iofr(5)
-    nxout=iofr(30)
+    nxin=int(iofr(5))
+    nxout=int(iofr(30))
     #myx=r[nxin:nxout,:,0]*np.sin(h[nxin:nxout,:,0])*np.cos(ph[nxin:nxout,:,0])
     #myy=r[nxin:nxout,:,0]*np.sin(h[nxin:nxout,:,0])*np.sin(ph[nxin:nxout,:,0])
     #myz=r[nxin:nxout,:,0]*np.cos(h[nxin:nxout,:,0])
@@ -28084,7 +28084,7 @@ def tutorial1alt():
         myfun[myfun<1E-4]=1E-4
         myfun[bsq/rho>1]=0
         myfun[rho<1E-5]=0
-    if 1==0:
+    if 1==1:
         myfun=lrho
     if 1==0:
         myfun=np.log10(1E-5+1.0/beta)
@@ -28115,7 +28115,7 @@ def tutorial1alt():
         myfun[myfun<=floor]=floor
         myfun[myfun>=cap]=cap
 
-    if 1==1:
+    if 1==0:
         myfun=bu[2]*np.sqrt(gv3[2,2]) #quasi-orthonormal
         cap=0.15#0.5*myfun.max()
         floor=-0.15#0.5*myfun.min()
@@ -28129,15 +28129,16 @@ def tutorial1alt():
     #######################################
     ax = plt.gca()
     ax.pcolor(myx,myz,myfun[nxin:nxout,:,42])  #try pcolormesh - faster
-    plc(myfun[nxin:nxout,:,42],xcoord=myx,ycoord=myz,ax=ax,cb=True,nc=50) #nc = number of contour
+    #plc(myfun[nxin:nxout,:,42],xcoord=myx,ycoord=myz,ax=ax,cb=True,nc=50) #nc = number of contour
     #print("cap="+str(cap))
     #print("floor="+str(floor))
     #print("floor="+str(floor))
     #plco(lrho,cb=True,nc=50)
     #
     #plc(myfun2[nxin:nxout,:,0],xcoord=myx,ycoord=myz,ax=ax,colors='k',nc=50)
-    plt.savefig('f7034_bz_iofph42.png')
+    plt.savefig('f13682_lrho_jofph42.png')
     #
+    return lrho
 
 def tutorial2():
     # first load grid file
@@ -29371,8 +29372,9 @@ def zoomvideo(fnumber,ncell):
     cvel()
     rhor=1+(1-a**2)**0.5
     ihor=np.floor(iofr(rhor)+0.5)
+    pg=(gam-1.0)*ug
     #set parameters for the interpolation routine
-    rng=40.0
+    rng=25.0
     ncell=ncell
     extent=(-rng,rng,-rng,rng)
     #compute quantities used for masking (currently magnetic flux and inverse beta 2/24/16)
@@ -29416,24 +29418,31 @@ def zoomvideo(fnumber,ncell):
     ilrho_hor=reinterpxyhor(lrho,extent,ncell,domask=1, interporder='linear')
     ilrho[ilrho.mask==True]=ilrho_hor[ilrho.mask==True]
 
-    cf=np.load("aug3/coords"+str(fnumber)+"_wv_hc.npz")
+    ibeta=0.5*bsq/pg
+    i_ibeta=reinterpxy(ibeta,extent,ncell,domask=1,interporder='linear')
+    i_ibeta_h=reinterpxyhor(ibeta,extent,ncell,domask=1,interporder='linear')
+    i_ibeta[i_ibeta.mask==True]=i_ibeta_h[i_ibeta.mask==True]
+
+    '''cf=np.load("aug3/coords"+str(fnumber)+"_wv_hc.npz")
     cs=cf['cs']
     hc=cf['hc']
-    cf.close()
+    cf.close()'''
     grid=np.linspace(-rng, rng, ncell)
     #Make plots to use as movie frames
     plt.clf()
     plt.figure(1)
-    plt.pcolor(grid,grid,irho)
+    plt.pcolor(grid,grid,i_ibeta,vmax=40)
     plt.colorbar()
-    plt.scatter(cs[:,0],cs[:,1],color='fuchsia')
-    plt.scatter(hc[:,0],hc[:,1],color='yellow')
+    #plt.scatter(cs[:,0],cs[:,1],color='fuchsia')
+    #plt.scatter(hc[:,0],hc[:,1],color='yellow')
+    #horcir=plt.Circle((0,0),2.5,color='r',fill=False)
+    #plt.gcf().gca().add_artist(horcir)
     plt.xlim(-rng,rng)
     plt.ylim(-rng,rng)
     plt.xlabel(r"$x [r_g]$",ha='center',labelpad=0,fontsize=14)
-    plt.ylabel(r"$y [r_g]$",ha='left',labelpad=20,fontsize=14)  
+    plt.ylabel(r"$y [r_g]$",ha='left',labelpad=0,fontsize=14)
     #plt.title('Inner Region '+str(fnumber).zfill(4))
-    plt.savefig('aug3/frames/seedprop_rho'+str(fnumber).zfill(4)+'.png')
+    plt.savefig('ibeta'+str(fnumber).zfill(4)+'.png')
 
 def addhorcirc(fnumber, ncell):
     grid3d("gdump.bin",use2d=True) #load the gdump.bin file - use2d=True to save memory
@@ -29778,13 +29787,13 @@ def stressvtime(fnumber):
     # now try loading a single fieldline file
     rfd("fieldline"+str(fnumber).zfill(4)+".bin")
     # now plot something you read-in
-    plt.clf()
-    plt.figure(1)
+    #plt.clf()
+    #plt.figure(1)
     ###############################
     (rhoclean,ugclean,uublob,maxbsqorhonear,maxbsqorhofar,condmaxbsqorho,condmaxbsqorhorhs,rinterp)=getrhouclean(rho,ug,uu)
     cvel()
     rhor=1+(1-a**2)**0.5
-    ihor=iofr(rhor)
+    ihor=int(iofr(rhor))
     pg=(gam-1.0)*ug
     # 
     diskcondition=condmaxbsqorho
@@ -29793,8 +29802,8 @@ def stressvtime(fnumber):
     diskeqcondition=diskcondition
     ##############################
     ###choose the radial extent of the plot
-    nxin=int(iofr(10))
-    nxout=int(iofr(40))
+    nxin=int(iofr(2.5))
+    nxout=int(iofr(25))
     ###choose extent in r,theta:
     hoverr=0.1
     hmin=np.pi/2 - hoverr
@@ -29824,13 +29833,13 @@ def stressvtime(fnumber):
     nummagrp_pert_out=np.sum(disk_rp_pert[nxin:nxout,mhin:mhout,:])
 
     integrand_zp=-bz*bphi*gdet*_dx1*_dx2*_dx3
-    bubble_zp=ma.masked_where(ibeta<10,integrand_zp)
-    disk_zp=ma.masked_where(ibeta>=10,integrand_zp)
+    bubble_zp=ma.masked_where(ibeta<40,integrand_zp)
+    disk_zp=ma.masked_where(ibeta>=40,integrand_zp)
     nummagzp_in=np.sum(bubble_zp[nxin:nxout,ny/2:mhout,:])-np.sum(bubble_zp[nxin:nxout,mhin:ny/2,:])
     nummagzp_out=np.sum(disk_zp[nxin:nxout,ny/2:mhout,:])-np.sum(disk_zp[nxin:nxout,mhin:ny/2,:])
     integrand_zp_pert=-bzpert*bphipert*gdet*_dx1*_dx2*_dx3
-    bubble_zp_pert=ma.masked_where(ibeta<10,integrand_zp_pert)
-    disk_zp_pert=ma.masked_where(ibeta>=10,integrand_zp_pert)
+    bubble_zp_pert=ma.masked_where(ibeta<40,integrand_zp_pert)
+    disk_zp_pert=ma.masked_where(ibeta>=40,integrand_zp_pert)
     nummagzp_pert_in=np.sum(bubble_zp_pert[nxin:nxout,ny/2:mhout,:])-np.sum(bubble_zp_pert[nxin:nxout,mhin:ny/2,:])
     nummagzp_pert_out=np.sum(disk_zp_pert[nxin:nxout,ny/2:mhout,:])-np.sum(disk_zp_pert[nxin:nxout,mhin:ny/2,:])
 
@@ -29839,9 +29848,9 @@ def stressvtime(fnumber):
     denom=np.sum(integrand_denom[nxin:nxout,mhin:mhout,:])
     
     ###masked quantities for plotting
-    brmsk=ma.masked_where(ibeta<10,br)
-    bzmsk=ma.masked_where(ibeta<10,bz)
-    bphimsk=ma.masked_where(ibeta<10,bphi)
+    brmsk=ma.masked_where(ibeta<40,br)
+    bzmsk=ma.masked_where(ibeta<40,bz)
+    bphimsk=ma.masked_where(ibeta<40,bphi)
 
     ###normalized stress in/out of bubble
     alphamagrp_bubble=nummagrp_in/denom
@@ -29864,9 +29873,9 @@ def stressvtime(fnumber):
     nummagzp_pert=np.sum(integrand_zp_pert[nxin:nxout,ny/2:mhout,:])-np.sum(integrand_zp_pert[nxin:nxout,mhin:ny/2,:])
     alphamagzp=nummagzp/denom
     alphamagzp_pert=nummagzp_pert/denom
-    #print alphamagrp_bubble, alphamagrp_disk
+    print alphamagrp_bubble, alphamagrp_disk
     
-    myfun=(-br*bphi)*r**2/np.average(ptot[ihor,ny/2,:])
+    '''myfun=(-br*bphi)*r**2/np.average(ptot[ihor,ny/2,:])
     myfun[myfun>3]=3
     myfun[myfun<-3]=-3
     ###########################
@@ -29882,10 +29891,10 @@ def stressvtime(fnumber):
     ax.grid(linestyle='-')
     plt.xlabel(r"$x [r_g]$",ha='center',labelpad=0,fontsize=14)
     plt.ylabel(r"$y [r_g]$",ha='left',labelpad=20,fontsize=14)
-    plt.savefig('amag'+str(fnumber)+'.png')
+    plt.savefig('amag'+str(fnumber)+'.png')'''
 
-    return fnumber, alphamagrp, alphamagzp
-    #return br,bz,bphi
+    return fnumber, alphamagrp_bubble, alphamagrp_pert_bubble, alphamagrp_disk, alphamagrp_pert_disk, alphamagzp_bubble, alphamagzp_pert_bubble, alphamagzp_disk, alphamagzp_pert_disk
+    #return ibeta, rho
 
 def fixprobarray(fnumber,ncell):
     grid3d("gdump.bin",use2d=True) #load the gdump.bin file - use2d=True to save memory
@@ -30015,3 +30024,168 @@ def tutorial1xyother(filename=None,fignum=None):
     plt.imshow(ifun,extent=extent)
     plt.colorbar()
     plt.savefig("plot7791.png")
+
+def stressdecompvtime(fnumber):
+    # first load grid file
+    global use2dglobal
+    use2dglobal=True
+    grid3d("gdump.bin", use2d=use2dglobal)
+    # now try loading a single fieldline file
+    rfd("fieldline"+str(fnumber).zfill(4)+".bin")
+    ###############################
+    (rhoclean,ugclean,uublob,maxbsqorhonear,maxbsqorhofar,condmaxbsqorho,condmaxbsqorhorhs,rinterp)=getrhouclean(rho,ug,uu)
+    cvel()
+    rhor=1+(1-a**2)**0.5
+    ihor=int(iofr(rhor))
+    pg=(gam-1.0)*ug
+    # 
+    diskcondition=condmaxbsqorho
+    #only around equator, not far away from equator
+    diskcondition=diskcondition*(bsq/rho<1.0)*(np.fabs(h-np.pi*0.5)<0.1)
+    diskeqcondition=diskcondition
+    ##############################
+    ###choose the radial extent of the plot
+    nxin=int(iofr(2.5))
+    nxout=int(iofr(25))
+    ###choose extent in r,theta:
+    hoverr=0.1
+    hmin=np.pi/2 - hoverr
+    hmax=np.pi/2 + hoverr
+    mhin=int(jofh(hmin,nxout))
+    mhout=int(jofh(hmax,nxout))
+
+    loadavg()
+    ###integrated stress
+    ibeta=0.5*bsq/pg #for masking
+    ##magnetic field decomposition into mean field and turbulent terms
+    br=bu[1]*np.sqrt(gv3[1,1])
+    brmean=avg_bu[1]*np.sqrt(gv3[1,1])
+    brpert=(bu[1]-avg_bu[1])*np.sqrt(gv3[1,1])
+    
+    bz=-bu[2]*np.sqrt(gv3[2,2]) #minus sign because theta hat points in -z hat direction
+    bzmean=-avg_bu[2]*np.sqrt(gv3[2,2])
+    bzpert=-(bu[2]-avg_bu[2])*np.sqrt(gv3[2,2])
+    
+    bphi=bd[3]*np.sqrt(gn3[3,3])
+    bphimean=avg_bd[3]*np.sqrt(gn3[3,3])
+    bphipert=(bd[3]-avg_bd[3])*np.sqrt(gn3[3,3])
+    ##integrands for the radial total stress and the 4 terms that make it
+    integrand_rp=-br*bphi*gdet*_dx1*_dx2*_dx3
+    integrand_rp_mean=-brmean*bphimean*gdet*_dx1*_dx2 #avg terms are 2d (r and theta), so don't integrate over phi
+    integrand_rp_cross1=-brmean*bphipert*gdet*_dx1*_dx2*_dx3
+    integrand_rp_cross2=-brpert*bphimean*gdet*_dx1*_dx2*_dx3
+    integrand_rp_pert=-brpert*bphipert*gdet*_dx1*_dx2*_dx3
+    ##masking and integrating
+    #total stress
+    bubble_rp_tot=ma.masked_where(ibeta<40,integrand_rp)
+    disk_rp_tot=ma.masked_where(ibeta>=40,integrand_rp)
+    nummagrp_bub_tot=np.sum(bubble_rp_tot[nxin:nxout,mhin:mhout,:])
+    nummagrp_disk_tot=np.sum(disk_rp_tot[nxin:nxout,mhin:mhout,:])
+    '''#mean field component - masking not working because avg2d averages in phi, so no good way to get 1D ibeta
+    bubble_rp_mean=ma.masked_where(ibeta[:,ny/2,:]<40,integrand_rp_mean)
+    disk_rp_mean=ma.masked_where(ibeta[:,ny/2,:]>=40,integrand_rp_mean)
+    nummagrp_bub_mean=np.sum(bubble_rp_mean[nxin:nxout,mhin:mhout,:])
+    nummagrp_disk_mean=np.sum(disk_rp_mean[nxin:nxout,mhin:mhout,:])'''
+    #mean radial, turbulent phi
+    bubble_rp_cross1=ma.masked_where(ibeta<40,integrand_rp_cross1)
+    disk_rp_cross1=ma.masked_where(ibeta>=40,integrand_rp_cross1)
+    nummagrp_bub_cross1=np.sum(bubble_rp_cross1[nxin:nxout,mhin:mhout,:])
+    nummagrp_disk_cross1=np.sum(disk_rp_cross1[nxin:nxout,mhin:mhout,:])
+    #turbulent radial, mean phi
+    bubble_rp_cross2=ma.masked_where(ibeta<40,integrand_rp_cross2)
+    disk_rp_cross2=ma.masked_where(ibeta>=40,integrand_rp_cross2)
+    nummagrp_bub_cross2=np.sum(bubble_rp_cross2[nxin:nxout,mhin:mhout,:])
+    nummagrp_disk_cross2=np.sum(disk_rp_cross2[nxin:nxout,mhin:mhout,:])
+    #both turbulent
+    bubble_rp_pert=ma.masked_where(ibeta<40,integrand_rp_pert)
+    disk_rp_pert=ma.masked_where(ibeta>=40,integrand_rp_pert)
+    nummagrp_bub_pert=np.sum(bubble_rp_pert[nxin:nxout,mhin:mhout,:])
+    nummagrp_disk_pert=np.sum(disk_rp_pert[nxin:nxout,mhin:mhout,:])
+
+    ##integrands for the vertical total stress and the 4 terms that make it
+    integrand_zp=-bz*bphi*gdet*_dx1*_dx2*_dx3
+    integrand_zp_mean=-bzmean*bphimean*gdet*_dx1*_dx2 #avg terms are 2d (r and theta), so don't integrate over phi
+    integrand_zp_cross1=-bzmean*bphipert*gdet*_dx1*_dx2*_dx3
+    integrand_zp_cross2=-bzpert*bphimean*gdet*_dx1*_dx2*_dx3
+    integrand_zp_pert=-bzpert*bphipert*gdet*_dx1*_dx2*_dx3
+    ##masking and integrating
+    #total stress
+    bubble_zp_tot=ma.masked_where(ibeta<40,integrand_zp)
+    disk_zp_tot=ma.masked_where(ibeta>=40,integrand_zp)
+    nummagzp_bub_tot=np.sum(bubble_zp_tot[nxin:nxout,ny/2:mhout,:])-np.sum(bubble_zp_tot[nxin:nxout,mhin:ny/2,:])
+    nummagzp_disk_tot=np.sum(disk_zp_tot[nxin:nxout,ny/2:mhout,:])-np.sum(disk_zp_tot[nxin:nxout,mhin:ny/2,:])
+    '''#mean field - masking not working because avg2d averages in phi, so no good way to get 1D ibeta
+    bubble_zp_mean=ma.masked_where(ibeta[:,ny/2,:]<40,integrand_zp_mean)
+    disk_zp_mean=ma.masked_where(ibeta[:,ny/2,:]>=40,integrand_zp_mean)
+    nummagzp_bub_mean=np.sum(bubble_zp_mean[nxin:nxout,ny/2:mhout,:])-np.sum(bubble_zp_mean[nxin:nxout,mhin:ny/2,:])
+    nummagzp_disk_mean=np.sum(disk_zp_mean[nxin:nxout,ny/2:mhout,:])-np.sum(disk_zp_mean[nxin:nxout,mhin:ny/2,:])'''
+    #mean vertical, turbulent phi
+    bubble_zp_cross1=ma.masked_where(ibeta<40,integrand_zp_cross1)
+    disk_zp_cross1=ma.masked_where(ibeta>=40,integrand_zp_cross1)
+    nummagzp_bub_cross1=np.sum(bubble_zp_cross1[nxin:nxout,ny/2:mhout,:])-np.sum(bubble_zp_cross1[nxin:nxout,mhin:ny/2,:])
+    nummagzp_disk_cross1=np.sum(disk_zp_cross1[nxin:nxout,ny/2:mhout,:])-np.sum(disk_zp_cross1[nxin:nxout,mhin:ny/2,:])
+    #turbulent vertical, mean phi
+    bubble_zp_cross2=ma.masked_where(ibeta<40,integrand_zp_cross2)
+    disk_zp_cross2=ma.masked_where(ibeta>=40,integrand_zp_cross2)
+    nummagzp_bub_cross2=np.sum(bubble_zp_cross2[nxin:nxout,ny/2:mhout,:])-np.sum(bubble_zp_cross2[nxin:nxout,mhin:ny/2,:])
+    nummagzp_disk_cross2=np.sum(disk_zp_cross2[nxin:nxout,ny/2:mhout,:])-np.sum(disk_zp_cross2[nxin:nxout,mhin:ny/2,:])
+    #both turbulent
+    bubble_zp_pert=ma.masked_where(ibeta<40,integrand_zp_pert)
+    disk_zp_pert=ma.masked_where(ibeta>=40,integrand_zp_pert)
+    nummagzp_bub_pert=np.sum(bubble_zp_pert[nxin:nxout,ny/2:mhout,:])-np.sum(bubble_zp_pert[nxin:nxout,mhin:ny/2,:])
+    nummagzp_disk_pert=np.sum(disk_zp_pert[nxin:nxout,ny/2:mhout,:])-np.sum(disk_zp_pert[nxin:nxout,mhin:ny/2,:])
+
+    ptot=0.5*avg_bsq+(gam-1.0)*avg_ug
+    integrand_denom=ptot*gdet*_dx1*_dx2*_dx3
+    denom=np.sum(integrand_denom[nxin:nxout,mhin:mhout,:])
+
+    ###normalized stress in/out of bubble
+    alphamagrp_bub_tot=nummagrp_bub_tot/denom
+    alphamagrp_disk_tot=nummagrp_disk_tot/denom
+    #alphamagrp_bub_mean=nummagrp_bub_mean/denom
+    #alphamagrp_disk_mean=nummagrp_disk_mean/denom
+    alphamagrp_bub_cross1=nummagrp_bub_cross1/denom
+    alphamagrp_disk_cross1=nummagrp_disk_cross1/denom
+    alphamagrp_bub_cross2=nummagrp_bub_cross2/denom
+    alphamagrp_disk_cross2=nummagrp_disk_cross2/denom
+    alphamagrp_bub_pert=nummagrp_bub_pert/denom
+    alphamagrp_disk_pert=nummagrp_disk_pert/denom
+
+    alphamagzp_bub_tot=nummagzp_bub_tot/denom
+    alphamagzp_disk_tot=nummagzp_disk_tot/denom
+    #alphamagzp_bub_mean=nummagzp_bub_mean/denom
+    #alphamagzp_disk_mean=nummagzp_disk_mean/denom
+    alphamagzp_bub_cross1=nummagzp_bub_cross1/denom
+    alphamagzp_disk_cross1=nummagzp_disk_cross1/denom
+    alphamagzp_bub_cross2=nummagzp_bub_cross2/denom
+    alphamagzp_disk_cross2=nummagzp_disk_cross2/denom
+    alphamagzp_bub_pert=nummagzp_bub_pert/denom
+    alphamagzp_disk_pert=nummagzp_disk_pert/denom
+
+    ###total stress
+    nummagrp_tot=np.sum(integrand_rp[nxin:nxout,mhin:mhout,:])
+    nummagrp_mean=np.sum(integrand_rp_mean[nxin:nxout,mhin:mhout,:])
+    nummagrp_cross1=np.sum(integrand_rp_cross1[nxin:nxout,mhin:mhout,:])
+    nummagrp_cross2=np.sum(integrand_rp_cross2[nxin:nxout,mhin:mhout,:])
+    nummagrp_pert=np.sum(integrand_rp_pert[nxin:nxout,mhin:mhout,:])
+    alphamagrp_tot=nummagrp_tot/denom
+    alphamagrp_mean=nummagrp_mean/denom
+    alphamagrp_cross1=nummagrp_cross1/denom
+    alphamagrp_cross2=nummagrp_cross2/denom
+    alphamagrp_pert=nummagrp_pert/denom
+
+    nummagzp_tot=np.sum(integrand_zp[nxin:nxout,mhin:mhout,:])-np.sum(integrand_zp[nxin:nxout,mhin:ny/2,:])
+    nummagzp_mean=np.sum(integrand_zp_mean[nxin:nxout,mhin:mhout,:])-np.sum(integrand_zp_mean[nxin:nxout,mhin:ny/2,:])
+    nummagzp_cross1=np.sum(integrand_zp_cross1[nxin:nxout,ny/2:mhout,:])-np.sum(integrand_zp_cross1[nxin:nxout,mhin:ny/2,:])
+    nummagzp_cross2=np.sum(integrand_zp_cross2[nxin:nxout,ny/2:mhout,:])-np.sum(integrand_zp_cross2[nxin:nxout,mhin:ny/2,:])
+    nummagzp_pert=np.sum(integrand_zp_pert[nxin:nxout,ny/2:mhout,:])-np.sum(integrand_zp_pert[nxin:nxout,mhin:ny/2,:])
+    alphamagzp_tot=nummagzp_tot/denom
+    alphamagzp_mean=nummagzp_mean/denom
+    alphamagzp_cross1=nummagzp_cross1/denom
+    alphamagzp_cross2=nummagzp_cross2/denom
+    alphamagzp_pert=nummagzp_pert/denom
+
+    print nummagzp_tot, nummagzp_mean,nummagzp_cross1,nummagzp_cross2,nummagzp_pert
+
+    #return ibeta, integrand_rp_mean, brmean, bphimean, gdet, _dx1, _dx2, _dx3
+    return fnumber, alphamagzp_tot, alphamagzp_mean, alphamagzp_cross1, alphamagzp_cross2, alphamagzp_pert, alphamagzp_bub_tot, alphamagzp_bub_cross1, alphamagzp_bub_cross2, alphamagzp_bub_pert, alphamagzp_disk_tot, alphamagzp_disk_cross1, alphamagzp_disk_cross2, alphamagzp_disk_pert
