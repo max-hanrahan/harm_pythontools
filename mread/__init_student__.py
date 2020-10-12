@@ -4171,7 +4171,7 @@ def zoomvideo(fnumber,ncell):
     #Make plots to use as movie frames
     plt.clf()
     plt.figure(1)
-    plt.pcolor(grid,grid,i_ibeta,vmax=40)
+    plt.pcolor(grid,grid,ilrho)
     plt.colorbar()
     #plt.scatter(cs[:,0],cs[:,1],color='fuchsia')
     #plt.scatter(hc[:,0],hc[:,1],color='yellow')
@@ -4667,6 +4667,8 @@ def fhorvstime(ihor):
 #
 ###################################
 def tutorial1alt():
+    global use2dglobal
+    use2dglobal=True
     # first load grid file
     grid3d("gdump.bin",use2d=True)
     # now try loading a single fieldline file
@@ -4707,14 +4709,14 @@ def tutorial1alt():
     #nxout=100
     nxin=int(iofr(5))
     nxout=int(iofr(30))
-    #myx=r[nxin:nxout,:,0]*np.sin(h[nxin:nxout,:,0])*np.cos(ph[nxin:nxout,:,0])
-    #myy=r[nxin:nxout,:,0]*np.sin(h[nxin:nxout,:,0])*np.sin(ph[nxin:nxout,:,0])
-    #myz=r[nxin:nxout,:,0]*np.cos(h[nxin:nxout,:,0])
+    myx=r[nxin:nxout,:,0]*np.sin(h[nxin:nxout,:,0])*np.cos(ph[nxin:nxout,:,0])
+    myy=r[nxin:nxout,:,0]*np.sin(h[nxin:nxout,:,0])*np.sin(ph[nxin:nxout,:,0])
+    myz=r[nxin:nxout,:,0]*np.cos(h[nxin:nxout,:,0])
     #
     ###internal coordinates
-    myx=r[nxin:nxout,:,0]
-    myy=ph[nxin:nxout,:,0]
-    myz=h[nxin:nxout,:,0]
+    #myx=r[nxin:nxout,:,0]
+    #myy=ph[nxin:nxout,:,0]
+    #myz=h[nxin:nxout,:,0]
     #############################
     if 1==1:
         myfun=lrho
@@ -4753,4 +4755,4 @@ def tutorial1alt():
     #plc(myfun2[nxin:nxout,:,0],xcoord=myx,ycoord=myz,ax=ax,colors='k',nc=50)
     plt.savefig('f13682_lrho_jofph42.png')
     #
-    return lrho
+    #return lrho
