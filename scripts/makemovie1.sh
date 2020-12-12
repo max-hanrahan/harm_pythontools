@@ -305,7 +305,7 @@ fi
 if [ $system -eq 3 ]
 then
     # 4 for thickdisk7 (until new memory put in)
-    numcorespernode=1  # MAVARA
+    numcorespernode=16  # MAVARA
     numnodes=1
     thequeue="none"
 fi
@@ -452,7 +452,6 @@ then
     # setup plotting part
     numtasksplot=1
     numnodesplot=1
-    numtotalnodesplot=1
     numcorespernodeplot=16
     # this gives 16GB free for plotting (temp vars + qty2.npy file has to be smaller than this or swapping will occur)
     numtotalcoresplot=$numcorespernodeplot
@@ -461,6 +460,9 @@ then
     # only took 6 minutes for thickdisk7 doing 458 files inside qty2.npy!  Up to death at point when tried to resample in time.
     timetotplot="8:00:00" # for normal can go up to 48 hours.  For serial up to 12 hours.
 
+	thequeueplot=$queue
+    numtasksplot=1
+    numtotalnodesplot=1
 
 
 fi
@@ -981,7 +983,6 @@ then
                             echo "cd $dirname" >> $superbatch
                             echo "export PYTHONPATH=$dirname/py:$PYTHONPATH" >> $superbatch
                             rm -rf $dirname/matplotlibdir/
-                            echo "export MPLCONFIGDIR=$dirname/matplotlibdir/" >> $superbatch
 		                    fakeruni=99999999999999
                             if [ $parallel -eq 1 ]
                             then
@@ -1213,7 +1214,6 @@ then
                 echo "#!/bin/bash" >> $superbatch
                 echo "cd $dirname" >> $superbatch
                 rm -rf $dirname/matplotlibdir/
-                echo "export MPLCONFIGDIR=$dirname/matplotlibdir/" >> $superbatch
                 echo "export PYTHONPATH=$dirname/py:$PYTHONPATH" >> $superbatch
                 if [ $parallel -eq 1 ]
                 then
@@ -1557,7 +1557,6 @@ then
                             echo "#!/bin/bash" >> $superbatch
                             echo "cd $dirname" >> $superbatch
                             rm -rf $dirname/matplotlibdir/
-                            echo "export MPLCONFIGDIR=$dirname/matplotlibdir/" >> $superbatch
                             echo "export PYTHONPATH=$dirname/py:$PYTHONPATH" >> $superbatch
 		                    fakeruni=99999999999999
                             if [ $parallel -eq 1 ]
@@ -1695,28 +1694,28 @@ then
         
         fps=25
         #
-        #ffmpeg -i lrho%04d_Rzxym1.png -r $fps lrho.mp4
-        #ffmpeg -fflags +genpts -i lrho%04d_Rzxym1.png -r $fps lrho.$modelname.avi
+        #ffmpeg -i lrho%04d_Rzxym1.png -r $fps -sameq lrho.mp4
+        #ffmpeg -fflags +genpts -i lrho%04d_Rzxym1.png -r $fps -sameq lrho.$modelname.avi
 
 	    if [ 1 -eq 0 ]
 	    then
         # high quality 1 minute long no matter what framerate (-t 60 doesn't work)
-	        ffmpeg -y -fflags +genpts -i lrho%04d_Rzxym1.png -r 25 -qmax 5 -vcodec mjpeg lrho25.$modelname.avi 
+	        ffmpeg -y -fflags +genpts -i lrho%04d_Rzxym1.png -r 25 -sameq -qmax 5 -vcodec mjpeg lrho25.$modelname.avi 
         # now set frame rate (changes duration)
 	        ffmpeg -y -i lrho25.$modelname.avi -f image2pipe -vcodec copy - </dev/null | ffmpeg -r $fps -f image2pipe -vcodec mjpeg -i - -vcodec copy -an lrho.$modelname.avi
 	        
         # high quality 1 minute long no matter what framerate (-t 60 doesn't work)
-	        ffmpeg -y -fflags +genpts -i lrhosmall%04d_Rzxym1.png -r 25 -qmax 5 -vcodec mjpeg lrhosmall25.$modelname.avi 
+	        ffmpeg -y -fflags +genpts -i lrhosmall%04d_Rzxym1.png -r 25 -sameq -qmax 5 -vcodec mjpeg lrhosmall25.$modelname.avi 
         # now set frame rate (changes duration)
 	        ffmpeg -y -i lrhosmall25.$modelname.avi -f image2pipe -vcodec copy - </dev/null | ffmpeg -r $fps -f image2pipe -vcodec mjpeg -i - -vcodec copy -an lrhosmall.$modelname.avi
 	    else
         # Sasha's command:
-	        ffmpeg -y -fflags +genpts -r $fps -i lrho%04d_Rzxym1.png -vcodec mpeg4 -qmax 5 lrho.$modelname.avi
-	        ffmpeg -y -fflags +genpts -r $fps -i lrhosmall%04d_Rzxym1.png -vcodec mpeg4 -qmax 5 lrhosmall.$modelname.avi
+	        ffmpeg -y -fflags +genpts -r $fps -i lrho%04d_Rzxym1.png -vcodec mpeg4 -sameq -qmax 5 lrho.$modelname.avi
+	        ffmpeg -y -fflags +genpts -r $fps -i lrhosmall%04d_Rzxym1.png -vcodec mpeg4 -sameq -qmax 5 lrhosmall.$modelname.avi
 	        
         # for Roger (i.e. any MAC)
-	        ffmpeg -y -fflags +genpts -r $fps -i lrho%04d_Rzxym1.png -qmax 5 lrho.$modelname.mov
-	        ffmpeg -y -fflags +genpts -r $fps -i lrhosmall%04d_Rzxym1.png -qmax 5 lrhosmall.$modelname.mov
+	        ffmpeg -y -fflags +genpts -r $fps -i lrho%04d_Rzxym1.png -sameq -qmax 5 lrho.$modelname.mov
+	        ffmpeg -y -fflags +genpts -r $fps -i lrhosmall%04d_Rzxym1.png -sameq -qmax 5 lrhosmall.$modelname.mov
 	    fi
     fi
 
@@ -1744,7 +1743,7 @@ numfiles=`find dumps/ -name "fieldline*.bin"|wc -l`
 echo "NUMFILES=$numfiles"
 
 #itemspergroup=$(( 1 )) # MAVARA
-itemspergroup=$(( 1 ))
+itemspergroup=$(( 20 ))
 
 # catch too small number of files
 # must match __init__.py
@@ -1943,7 +1942,6 @@ then
                             echo "#!/bin/bash" >> $superbatch
                             echo "cd $dirname" >> $superbatch
                             rm -rf $dirname/matplotlibdir/
-                            echo "export MPLCONFIGDIR=$dirname/matplotlibdir/" >> $superbatch
                             echo "export PYTHONPATH=$dirname/py:$PYTHONPATH" >> $superbatch
 		                    fakeruni=99999999999999
                             if [ $parallel -eq 1 ]
@@ -2202,7 +2200,6 @@ then
                 echo "#!/bin/bash" >> $superbatch
                 echo "cd $dirname" >> $superbatch
                 rm -rf $dirname/matplotlibdir/
-                echo "export MPLCONFIGDIR=$dirname/matplotlibdir/" >> $superbatch
                 echo "export PYTHONPATH=$dirname/py:$PYTHONPATH" >> $superbatch
                 if [ $parallel -eq 1 ]
                 then

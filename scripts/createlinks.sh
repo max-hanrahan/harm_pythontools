@@ -53,7 +53,7 @@ cd ..
 
 cp -a ../thickdisk9/movie1 .
 cd movie1/
-rm -rf *.png *.eps *.npy python*.out *.avi *.pdf
+rm -rf *.png *.eps *.npy python*.out *.avi *.pdf dumps
 alias cp='cp'
 cp ~/py/scripts/createlinksalt.sh .
 sh createlinksalt.sh 100 ../ ./
