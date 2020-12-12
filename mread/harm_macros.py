@@ -26,7 +26,7 @@ def plc(myvar,xcoord=None,ycoord=None,**kwargs): #plc
     #xcoord = kwargs.pop('x1', None)
     #ycoord = kwargs.pop('x2', None)
     if(np.min(myvar)==np.max(myvar)):
-        print("The quantity you are trying to plot is a constant = %g." % np.min(myvar))
+        print(("The quantity you are trying to plot is a constant = %g." % np.min(myvar)))
         return
     cb = kwargs.pop('cb', False)
     nc = kwargs.pop('nc', 15)
@@ -202,7 +202,7 @@ def rd(dump):
 
 def rgfd(fieldlinefilename,**kwargs):
     if not os.path.isfile(os.path.join("dumps/", fieldlinefilename)):
-        print( "File " + fieldlinefilename + " does not exist. Aborting." )
+        print(( "File " + fieldlinefilename + " does not exist. Aborting." ))
         return
     if 'gv3' not in globals():
         gdumpname = glob.glob( os.path.join("dumps/", "gdump*") )
@@ -288,7 +288,7 @@ def cvel():
 
 def grid3d(dumpname): #read gdump: header and body
     global nx,ny,nz,_dx1,_dx2,_dx3,ti,tj,tk,x1,x2,x3,r,h,ph,conn,gn3,gv3,ck,dxdxp,gdet
-    print( "Reading grid from " + "dumps/" + dumpname + " ..." )
+    print(( "Reading grid from " + "dumps/" + dumpname + " ..." ))
     gin = open( "dumps/" + dumpname, "rb" )
     header = gin.readline().split()
     nx = int(header[1])
@@ -385,7 +385,7 @@ def rdebug(debugfname):
     failtot2sum=np.sum(failtot2)
     failtot3sum=np.sum(failtot3)
     #
-    print( "failtotsum(0,1,2,3): %10d, %10d, %10d, %10d" % (failtot0sum, failtot1sum, failtot2sum, failtot3sum) )
+    print(( "failtotsum(0,1,2,3): %10d, %10d, %10d, %10d" % (failtot0sum, failtot1sum, failtot2sum, failtot3sum) ))
     #
     # absolute totals
     dtot0=fail0+floor0+limitgamma0+failrho0+failu0+failrhou0+precgam0+precu0
@@ -403,13 +403,13 @@ def rdebug(debugfname):
     dtot2sum=np.sum(dtot2)
     dtot3sum=np.sum(dtot3)
     #
-    print( "   dtotsum(0,1,2,3): %10d, %10d, %10d, %10d" % (dtot0sum, dtot1sum, dtot2sum, dtot3sum) )
+    print(( "   dtotsum(0,1,2,3): %10d, %10d, %10d, %10d" % (dtot0sum, dtot1sum, dtot2sum, dtot3sum) ))
     #
 
 
 def rfdgrid(dumpname): #read gdump: header and body
     global nx,ny,nz,_dx1,_dx2,_dx3,ti,tj,tk,x1,x2,x3,r,h,ph,conn,gn3,gv3,ck,dxdxp,gdet
-    print( "Reading grid from " + "dumps/" + dumpname + " ..." )
+    print(( "Reading grid from " + "dumps/" + dumpname + " ..." ))
     gin = open( "dumps/" + dumpname, "rb" )
     header = gin.readline().split()
     nx = int(header[1])
@@ -518,7 +518,7 @@ def fhorvstime(ihor):
     fs=np.empty(len(flist),dtype=float)
     md=np.empty(len(flist),dtype=float)
     for findex, fname in enumerate(flist):
-        print( "Reading " + fname + " ..." )
+        print(( "Reading " + fname + " ..." ))
         rfd("../"+fname)
         fs[findex]=horfluxcalc(ihor)
         md[findex]=mdotcalc(ihor)
@@ -585,7 +585,7 @@ if __name__ == "__main__":
         grid3d( os.path.basename(glob.glob(os.path.join("dumps/", "gdump*"))[0]) )
         flist = glob.glob( os.path.join("dumps/", "fieldline*.bin") )
         for findex, fname in enumerate(flist):
-            print( "Reading " + fname + " ..." )
+            print(( "Reading " + fname + " ..." ))
             rfd("../"+fname)
             plt.clf()
             #this reinterpolates to a Cartesian grid and plots field lines
