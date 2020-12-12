@@ -9,7 +9,7 @@ def grid3d(dumpname): #read grid dump file: header and body
     #go over, if needed.
     global nx,ny,nz,_dx1,_dx2,_dx3,gam,a,Rin,Rout,ti,tj,tk,x1,x2,x3,r,h,ph,conn,gn3,gv3,ck,dxdxp,gdet
     global tif,tjf,tkf,rf,hf,phf
-    print( "Reading grid from " + "dumps/" + dumpname + " ..." )
+    print(( "Reading grid from " + "dumps/" + dumpname + " ..." ))
     gin = open( "dumps/" + dumpname, "rb" )
     #First line of grid dump file is a text line that contains general grid information:
     header = gin.readline().split()
@@ -170,7 +170,7 @@ def plc(myvar,xcoord=None,ycoord=None,**kwargs): #plc
     #xcoord = kwargs.pop('x1', None)
     #ycoord = kwargs.pop('x2', None)
     if(np.min(myvar)==np.max(myvar)):
-        print("The quantity you are trying to plot is a constant = %g." % np.min(myvar))
+        print(("The quantity you are trying to plot is a constant = %g." % np.min(myvar)))
         return
     cb = kwargs.pop('cb', False)
     nc = kwargs.pop('nc', 15)
