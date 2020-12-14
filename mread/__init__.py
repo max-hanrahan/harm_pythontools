@@ -1911,9 +1911,9 @@ def getrhouclean(rho,ug,uu):
     #
     print(("t=%g" % (t)))
     print("r")
-    print((r[:,ny/2,0]))
+    print((r[:,ny//2,0]))
     print("condmaxbsqorhorhs along r")
-    print((condmaxbsqorhorhs[:,ny/2,0]))
+    print((condmaxbsqorhorhs[:,ny//2,0]))
     print("condmaxbsqorho along eq")
     print((condmaxbsqorho[0,:,0]))
     #
@@ -5270,9 +5270,9 @@ def compute_taurad(domergeangles=True,radiussettau1zero=80):
         taurad2flipintegrated=taurad2flipintegrated[:,::-1,:]
         if domergeangles==True:
             ########################### merge taurad2's
-            for jj in np.arange(0,ny/2):
+            for jj in np.arange(0,ny//2):
                 taurad2flipintegrated[:,jj,:]=taurad2integrated[:,jj,:]
-            for jj in np.arange(ny/2,ny):
+            for jj in np.arange(ny//2,ny):
                 taurad2integrated[:,jj,:]=taurad2flipintegrated[:,jj,:]
         #
         ########################### tauradeff2 (from theta=0 pole)
@@ -5289,9 +5289,9 @@ def compute_taurad(domergeangles=True,radiussettau1zero=80):
         tauradeff2flipintegrated=tauradeff2flipintegrated[:,::-1,:]
         ########################### merge tauradeff2's
         if domergeangles==True:
-            for jj in np.arange(0,ny/2):
+            for jj in np.arange(0,ny//2):
                 tauradeff2flipintegrated[:,jj,:]=tauradeff2integrated[:,jj,:]
-            for jj in np.arange(ny/2,ny):
+            for jj in np.arange(ny//2,ny):
                 tauradeff2integrated[:,jj,:]=tauradeff2flipintegrated[:,jj,:]
         #
         ########################### taurad3
@@ -5402,9 +5402,9 @@ def reinterpxy(vartointerp,extent,ncell,domask=1,interporder='cubic'):
     xraw=r*np.sin(h)*np.cos(ph)
     yraw=r*np.sin(h)*np.sin(ph)
     #2 cells below the midplane
-    x=xraw[:,ny/2,:].view().reshape(-1)
-    y=yraw[:,ny/2,:].view().reshape(-1)
-    var=vartointerp[:,ny/2,:].view().reshape(-1)
+    x=xraw[:,ny//2,:].view().reshape(-1)
+    y=yraw[:,ny//2,:].view().reshape(-1)
+    var=vartointerp[:,ny//2,:].view().reshape(-1)
     #mirror
     if nz*_dx3*dxdxp[3,3,0,0,0] < 0.99 * 2 * np.pi:
         x=np.concatenate((-x,x))
@@ -5433,9 +5433,9 @@ def reinterpxyhor(vartointerp,extent,ncell,domask=1,interporder='cubic'):
     xraw=r*np.sin(h)*np.cos(ph)
     yraw=r*np.sin(h)*np.sin(ph)
     #restrict values to BH upper hemisphere
-    x=xraw[ihor,0:ny/2,:].view().reshape(-1)
-    y=yraw[ihor,0:ny/2,:].view().reshape(-1)
-    var=vartointerp[ihor,0:ny/2,:].view().reshape(-1)
+    x=xraw[ihor,0:ny//2,:].view().reshape(-1)
+    y=yraw[ihor,0:ny//2,:].view().reshape(-1)
+    var=vartointerp[ihor,0:ny//2,:].view().reshape(-1)
     #mirror
     if nz*_dx3*dxdxp[3,3,0,0,0] < 0.99 * 2 * np.pi:
         x=np.concatenate((-x,x))
@@ -5461,9 +5461,9 @@ def reinterpMeg(vartointerp,extent,ncell,domask=1,interporder='cubic'):
     global xi,yi,zi
     xraw=r
     yraw=ph
-    x=xraw[:,ny/2+1,:].view().reshape(-1)
-    y=yraw[:,ny/2+1,:].view().reshape(-1)
-    var=vartointerp[:,ny/2+1,:].view().reshape(-1)
+    x=xraw[:,ny//2+1,:].view().reshape(-1)
+    y=yraw[:,ny//2+1,:].view().reshape(-1)
+    var=vartointerp[:,ny//2+1,:].view().reshape(-1)
     # define grid.
     xi = np.linspace(extent[0], extent[1], ncell)
     yi = np.linspace(extent[2], extent[3], ncell)
@@ -5484,10 +5484,10 @@ def reinterpxymegan(vartointerp,extent,ncell,domask=2,interporder='cubic'):
     xraw=r*np.sin(h)*np.cos(ph)
     yraw=r*np.sin(h)*np.sin(ph)
     #2 cells below the midplane
-    x=xraw[:,ny/2+1,:].view().reshape(-1)
-    y=yraw[:,ny/2+1,:].view().reshape(-1)
-    var=vartointerp[:,ny/2+1,:].view().reshape(-1)
-    ugvar=ug[:,ny/2+1,:].view().reshape(-1)
+    x=xraw[:,ny//2+1,:].view().reshape(-1)
+    y=yraw[:,ny//2+1,:].view().reshape(-1)
+    var=vartointerp[:,ny//2+1,:].view().reshape(-1)
+    ugvar=ug[:,ny//2+1,:].view().reshape(-1)
     #mirror
     if nz*_dx3*dxdxp[3,3,0,0,0] < 0.99 * 2 * np.pi:
         x=np.concatenate((-x,x))
@@ -6046,7 +6046,7 @@ def mkframe(fname,ax=None,cb=True,tight=False,useblank=True,vmin=None,vmax=None,
     #
     if showjet:
         #ax.contour(imu,linewidths=0.5,colors='g', extent=extent,hold='on',origin='lower',levels=(2,))
-        ax.contour(iaphi,linewidths=0.5,colors='b', extent=extent,hold='on',origin='lower',levels=(aphi[ihor,ny/2,0],))
+        ax.contour(iaphi,linewidths=0.5,colors='b', extent=extent,hold='on',origin='lower',levels=(aphi[ihor,ny//2,0],))
     #
     #
     ###########################################
@@ -7488,9 +7488,9 @@ def fieldcalcface(gdetB1=None):
     #average in phi and add up
     daphi = (gdetB1).sum(-1)[:,:,None]/nz*_dx2
     aphi = np.zeros_like(daphi)
-    aphi[:,1:ny/2+1]=(daphi.cumsum(axis=1))[:,0:ny/2]
+    aphi[:,1:ny//2+1]=(daphi.cumsum(axis=1))[:,0:ny//2]
     #sum up from the other pole
-    aphi[:,ny/2+1:ny]=(-daphi[:,::-1].cumsum(axis=1))[:,::-1][:,ny/2+1:ny]
+    aphi[:,ny//2+1:ny]=(-daphi[:,::-1].cumsum(axis=1))[:,::-1][:,ny//2+1:ny]
     return(aphi)
 
 
@@ -7560,9 +7560,9 @@ def fieldcalcU3D(gdetB1=None):
     # get result for each k
     aphi = np.zeros_like(gdetB1)
     daphi = gdetB1*_dx2
-    aphi[:,1:ny/2+1,:]=(daphi.cumsum(axis=1))[:,0:ny/2,:]
+    aphi[:,1:ny//2+1,:]=(daphi.cumsum(axis=1))[:,0:ny//2,:]
     #sum up from the other pole
-    aphi[:,ny/2+1:ny,:]=(-daphi[:,::-1,:].cumsum(axis=1))[:,::-1,:][:,ny/2+1:ny,:]
+    aphi[:,ny//2+1:ny,:]=(-daphi[:,::-1,:].cumsum(axis=1))[:,::-1,:][:,ny//2+1:ny,:]
     #
     # aphi so far sits at CORN3.  Below gets at CENT so can plot.
     #
@@ -8090,7 +8090,7 @@ def rfd(fieldlinefilename,**kwargs):
     #Velocity components: u1, u2, u3, 
     #Cell-centered magnetic field components: B1, B2, B3, 
     #Face-centered magnetic field components multiplied by metric determinant: gdetB1, gdetB2, gdetB3
-    global rho,ug,uu,B,gdetB,Erf,urad,uradu
+    global rho,ug,uu,B,gdetB,Erf,urad,uradu, numcolumns
     #
     #read image
     #
@@ -8714,7 +8714,7 @@ def rfdtransform(gotgdetB=0):
     utest1old[1]=1.0
     utest1old[2]=0.0
     utest1old[3]=0.0
-    utest1new=np.tensordot(utest1old,transV2Vmetric[:,:,60,ny/2,nz/4],axes=[0,1])
+    utest1new=np.tensordot(utest1old,transV2Vmetric[:,:,60,ny//2,nz/4],axes=[0,1])
     print("utest1new");sys.stdout.flush()
     print(utest1new);sys.stdout.flush()
     #
@@ -8723,7 +8723,7 @@ def rfdtransform(gotgdetB=0):
     utest1old[1]=0.0
     utest1old[2]=1.0
     utest1old[3]=0.0
-    utest1new=np.tensordot(utest1old,transV2Vmetric[:,:,60,ny/2,nz/4],axes=[0,1])
+    utest1new=np.tensordot(utest1old,transV2Vmetric[:,:,60,ny//2,nz/4],axes=[0,1])
     print("utest2new");sys.stdout.flush()
     print(utest1new);sys.stdout.flush()
     #
@@ -8732,7 +8732,7 @@ def rfdtransform(gotgdetB=0):
     utest1old[1]=0.0
     utest1old[2]=0.0
     utest1old[3]=1.0
-    utest1new=np.tensordot(utest1old,transV2Vmetric[:,:,60,ny/2,nz/4],axes=[0,1])
+    utest1new=np.tensordot(utest1old,transV2Vmetric[:,:,60,ny//2,nz/4],axes=[0,1])
     print("utest3new");sys.stdout.flush()
     print(utest1new);sys.stdout.flush()
     #
@@ -9390,8 +9390,8 @@ def gridcellverts():
     #tjf=np.zeros(tj.shape[0]+1,tj.shape[1]+1,tj.shape[2]+1)
     #tkf=np.zeros(tk.shape[0]+1,tk.shape[1]+1,tk.shape[2]+1)
     tif=np.arange(0,(nx+1)*(ny+1)*(lnz+1)).reshape((nx+1,ny+1,lnz+1),order='F')
-    tjf=np.arange(0,(nx+1)*(ny+1)*(lnz+1)).reshape((nx+1,ny+1,lnz+1),order='F')
-    tkf=np.arange(0,(nx+1)*(ny+1)*(lnz+1)).reshape((nx+1,ny+1,lnz+1),order='F')
+    tjf=np.arange(0,(nx+1)*(ny+1)*(lnz+1), dtype ='float').reshape((nx+1,ny+1,lnz+1),order='F')
+    tkf=np.arange(0,(nx+1)*(ny+1)*(lnz+1), dtype ='float').reshape((nx+1,ny+1,lnz+1),order='F')
     tif %= (nx+1)
     tjf /= (nx+1)
     tjf %= (ny+1)
@@ -9713,7 +9713,7 @@ def horfluxcalc(ivalue=None,jvalue=None,takeabs=1,takecumsum=0,takeextreme=0,min
                     #
                     # assume all values are zero if here, so just choose one of the zero values
                     if len(tempresult)==0:
-                        tempresult=ny/2
+                        tempresult=ny//2
                     #
                     if type(tempresult) is not int:
                         tempresult=tempresult[0]
@@ -28019,7 +28019,7 @@ def tutorial1alt():
     # first load grid file
     grid3d("gdump.bin",use2d=True)
     # now try loading a single fieldline file
-    rfd("fieldline13682.bin")
+    rfd("fieldline14926.bin")
     # now plot something you read-in
     plt.clf()
     plt.figure(1)
