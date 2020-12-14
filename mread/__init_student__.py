@@ -736,7 +736,7 @@ def areahor():
     print(("area=%g" % (area)))
     areashould = 4.0*np.pi/3.0*(3.0*rhor*rhor+a*a)
     print(("areashould=%g" % (areashould)))
-    areaup = np.sum(unit[ihor,0:ny/2,:]*gdet[ihor,0:ny/2,:]*_dx2*_dx3)
+    areaup = np.sum(unit[ihor,0:ny//2,:]*gdet[ihor,0:ny//2,:]*_dx2*_dx3)
     print(("areaup=%g" % (areaup)))
     areaupshould = areashould/2.0
     print(("areaupshould=%g" % (areaupshould)))
@@ -745,7 +745,7 @@ def areahor():
     #
     area = np.sum(unit[ihor,:,:]*gdet[ihor+1,:,:]*_dx2*_dx3)
     print(("area=%g" % (area)))
-    areaup = np.sum(unit[ihor,0:ny/2,:]*gdet[ihor+1,0:ny/2,:]*_dx2*_dx3)
+    areaup = np.sum(unit[ihor,0:ny//2,:]*gdet[ihor+1,0:ny//2,:]*_dx2*_dx3)
     print(("areaup=%g" % (areaup)))
 
 def horfluxcalc(ivalue=None,jvalue=None,takeabs=1,takecumsum=0,takeextreme=0,minbsqorho=10,inflowonly=None,outflowonly=None,whichcondition=True,uphalf=None):
@@ -803,7 +803,7 @@ def horfluxcalc(ivalue=None,jvalue=None,takeabs=1,takecumsum=0,takeextreme=0,min
                     #
                     # assume all values are zero if here, so just choose one of the zero values
                     if len(tempresult)==0:
-                        tempresult=ny/2
+                        tempresult=ny//2
                     #
                     if type(tempresult) is not int:
                         tempresult=tempresult[0]
@@ -1905,7 +1905,7 @@ def rfdtransform(gotgdetB=0):
     utest1old[1]=1.0
     utest1old[2]=0.0
     utest1old[3]=0.0
-    utest1new=np.tensordot(utest1old,transV2Vmetric[:,:,60,ny/2,nz/4],axes=[0,1])
+    utest1new=np.tensordot(utest1old,transV2Vmetric[:,:,60,ny//2,nz/4],axes=[0,1])
     print("utest1new");sys.stdout.flush()
     print(utest1new);sys.stdout.flush()
     #
@@ -1914,7 +1914,7 @@ def rfdtransform(gotgdetB=0):
     utest1old[1]=0.0
     utest1old[2]=1.0
     utest1old[3]=0.0
-    utest1new=np.tensordot(utest1old,transV2Vmetric[:,:,60,ny/2,nz/4],axes=[0,1])
+    utest1new=np.tensordot(utest1old,transV2Vmetric[:,:,60,ny//2,nz/4],axes=[0,1])
     print("utest2new");sys.stdout.flush()
     print(utest1new);sys.stdout.flush()
     #
@@ -1923,7 +1923,7 @@ def rfdtransform(gotgdetB=0):
     utest1old[1]=0.0
     utest1old[2]=0.0
     utest1old[3]=1.0
-    utest1new=np.tensordot(utest1old,transV2Vmetric[:,:,60,ny/2,nz/4],axes=[0,1])
+    utest1new=np.tensordot(utest1old,transV2Vmetric[:,:,60,ny//2,nz/4],axes=[0,1])
     print("utest3new");sys.stdout.flush()
     print(utest1new);sys.stdout.flush()
     #
@@ -2520,9 +2520,9 @@ def fieldcalcface(gdetB1=None):
     #average in phi and add up
     daphi = (gdetB1).sum(-1)[:,:,None]/nz*_dx2
     aphi = np.zeros_like(daphi)
-    aphi[:,1:ny/2+1]=(daphi.cumsum(axis=1))[:,0:ny/2]
+    aphi[:,1:ny//2+1]=(daphi.cumsum(axis=1))[:,0:ny//2]
     #sum up from the other pole
-    aphi[:,ny/2+1:ny]=(-daphi[:,::-1].cumsum(axis=1))[:,::-1][:,ny/2+1:ny]
+    aphi[:,ny//2+1:ny]=(-daphi[:,::-1].cumsum(axis=1))[:,::-1][:,ny//2+1:ny]
     return(aphi)
 
 # compute integrated optical depth
@@ -2598,9 +2598,9 @@ def compute_taurad(domergeangles=True,radiussettau1zero=80):
         taurad2flipintegrated=taurad2flipintegrated[:,::-1,:]
         if domergeangles==True:
             ########################### merge taurad2's
-            for jj in np.arange(0,ny/2):
+            for jj in np.arange(0,ny//2):
                 taurad2flipintegrated[:,jj,:]=taurad2integrated[:,jj,:]
-            for jj in np.arange(ny/2,ny):
+            for jj in np.arange(ny//2,ny):
                 taurad2integrated[:,jj,:]=taurad2flipintegrated[:,jj,:]
         #
         ########################### tauradeff2 (from theta=0 pole)
@@ -2617,9 +2617,9 @@ def compute_taurad(domergeangles=True,radiussettau1zero=80):
         tauradeff2flipintegrated=tauradeff2flipintegrated[:,::-1,:]
         ########################### merge tauradeff2's
         if domergeangles==True:
-            for jj in np.arange(0,ny/2):
+            for jj in np.arange(0,ny//2):
                 tauradeff2flipintegrated[:,jj,:]=tauradeff2integrated[:,jj,:]
-            for jj in np.arange(ny/2,ny):
+            for jj in np.arange(ny//2,ny):
                 tauradeff2integrated[:,jj,:]=tauradeff2flipintegrated[:,jj,:]
         #
         ########################### taurad3
@@ -3414,9 +3414,9 @@ def plot_slice(fnumber, phi, cap, floor, IC=True, stress=True):
         myz=h[nxin:nxout,:,0]
     else:
         ###use spherical polar
-        myx=r[nxin:nxout,ny/2,:]*np.sin(h[nxin:nxout,ny/2,:])*np.cos(ph[nxin:nxout,ny/2,:])                                      
-        myy=r[nxin:nxout,ny/2,:]*np.sin(h[nxin:nxout,ny/2,:])*np.sin(ph[nxin:nxout,ny/2,:])                                      
-        myz=r[nxin:nxout,ny/2,:]*np.cos(h[nxin:nxout,ny/2,:])
+        myx=r[nxin:nxout,ny//2,:]*np.sin(h[nxin:nxout,ny//2,:])*np.cos(ph[nxin:nxout,ny//2,:])                                      
+        myy=r[nxin:nxout,ny//2,:]*np.sin(h[nxin:nxout,ny//2,:])*np.sin(ph[nxin:nxout,ny//2,:])                                      
+        myz=r[nxin:nxout,ny//2,:]*np.cos(h[nxin:nxout,ny//2,:])
     #############################
     if stress:
         numMag=jabs(-bu[1]*np.sqrt(gv3[1,1])*bd[3]*np.sqrt(gn3[3,3]))
@@ -3442,8 +3442,8 @@ def plot_slice(fnumber, phi, cap, floor, IC=True, stress=True):
     #                                                                          
     #######################################                                                                          
     ax = plt.gca()
-    ax.pcolor(myx,myy,myfun[nxin:nxout,ny/2,:],norm=[None,MidpointNormalize(midpoint=0)][ax>=1])  #try pcolormesh - faster                                               
-    plc(myfun[nxin:nxout,ny/2,:],xcoord=myx,ycoord=myy,ax=ax,cb=True,nc=50,norm=[None,MidpointNormalize(midpoint=0)][ax>=1]) #nc = number of contour
+    ax.pcolor(myx,myy,myfun[nxin:nxout,ny//2,:],norm=[None,MidpointNormalize(midpoint=0)][ax>=1])  #try pcolormesh - faster                                               
+    plc(myfun[nxin:nxout,ny//2,:],xcoord=myx,ycoord=myy,ax=ax,cb=True,nc=50,norm=[None,MidpointNormalize(midpoint=0)][ax>=1]) #nc = number of contour
     ax.grid(linestyle='-')
     #print("cap="+str(cap))                                                                                          
     #print("floor="+str(floor))
@@ -3725,9 +3725,9 @@ def reinterpxy(vartointerp,extent,ncell,domask=1,interporder='cubic'):
     xraw=r*np.sin(h)*np.cos(ph)
     yraw=r*np.sin(h)*np.sin(ph)
     #2 cells below the midplane
-    x=xraw[:,ny/2,:].view().reshape(-1)
-    y=yraw[:,ny/2,:].view().reshape(-1)
-    var=vartointerp[:,ny/2,:].view().reshape(-1)
+    x=xraw[:,ny//2,:].view().reshape(-1)
+    y=yraw[:,ny//2,:].view().reshape(-1)
+    var=vartointerp[:,ny//2,:].view().reshape(-1)
     #mirror
     if nz*_dx3*dxdxp[3,3,0,0,0] < 0.99 * 2 * np.pi:
         x=np.concatenate((-x,x))
@@ -3756,9 +3756,9 @@ def reinterpxyhor(vartointerp,extent,ncell,domask=1,interporder='cubic'):
     xraw=r*np.sin(h)*np.cos(ph)
     yraw=r*np.sin(h)*np.sin(ph)
     #restrict values to BH upper hemisphere
-    x=xraw[ihor,0:ny/2,:].view().reshape(-1)
-    y=yraw[ihor,0:ny/2,:].view().reshape(-1)
-    var=vartointerp[ihor,0:ny/2,:].view().reshape(-1)
+    x=xraw[ihor,0:ny//2,:].view().reshape(-1)
+    y=yraw[ihor,0:ny//2,:].view().reshape(-1)
+    var=vartointerp[ihor,0:ny//2,:].view().reshape(-1)
     #mirror
     if nz*_dx3*dxdxp[3,3,0,0,0] < 0.99 * 2 * np.pi:
         x=np.concatenate((-x,x))
@@ -3827,9 +3827,9 @@ def get_RT_seedpoints(fnumber, ncell):
     myx=myr3d*np.sin(myh3d)*np.cos(myph3d)
     myy=myr3d*np.sin(myh3d)*np.sin(myph3d)
     myz=myr3d*np.cos(myh3d)
-    myxeq=myx[:,ny/2,:]
-    myyeq=myy[:,ny/2,:]
-    myzeq=myz[:,ny/2,:]
+    myxeq=myx[:,ny//2,:]
+    myyeq=myy[:,ny//2,:]
+    myzeq=myz[:,ny//2,:]
     #load the fieldline file for a given time and compute standard quantities
     rfd("fieldline"+str(fnumber)+".bin")
     cvel()
@@ -4198,9 +4198,9 @@ def addhorcirc(fnumber, ncell):
     myx=myr3d*np.sin(myh3d)*np.cos(myph3d)
     myy=myr3d*np.sin(myh3d)*np.sin(myph3d)
     myz=myr3d*np.cos(myh3d)
-    myxeq=myx[:,ny/2,:]
-    myyeq=myy[:,ny/2,:]
-    myzeq=myz[:,ny/2,:]
+    myxeq=myx[:,ny//2,:]
+    myyeq=myy[:,ny//2,:]
+    myzeq=myz[:,ny//2,:]
     #load the fieldline file for a given time and compute standard quantities
     rfd("fieldline"+str(fnumber)+".bin")
     cvel()
@@ -4410,13 +4410,13 @@ def stressvtime(fnumber):
     integrand_zp=-bz*bphi*gdet*_dx1*_dx2*_dx3
     bubble_zp=ma.masked_where(ibeta<40,integrand_zp)
     disk_zp=ma.masked_where(ibeta>=40,integrand_zp)
-    nummagzp_in=np.sum(bubble_zp[nxin:nxout,ny/2:mhout,:])-np.sum(bubble_zp[nxin:nxout,mhin:ny/2,:])
-    nummagzp_out=np.sum(disk_zp[nxin:nxout,ny/2:mhout,:])-np.sum(disk_zp[nxin:nxout,mhin:ny/2,:])
+    nummagzp_in=np.sum(bubble_zp[nxin:nxout,ny//2:mhout,:])-np.sum(bubble_zp[nxin:nxout,mhin:ny/2,:])
+    nummagzp_out=np.sum(disk_zp[nxin:nxout,ny//2:mhout,:])-np.sum(disk_zp[nxin:nxout,mhin:ny/2,:])
     integrand_zp_pert=-bzpert*bphipert*gdet*_dx1*_dx2*_dx3
     bubble_zp_pert=ma.masked_where(ibeta<40,integrand_zp_pert)
     disk_zp_pert=ma.masked_where(ibeta>=40,integrand_zp_pert)
-    nummagzp_pert_in=np.sum(bubble_zp_pert[nxin:nxout,ny/2:mhout,:])-np.sum(bubble_zp_pert[nxin:nxout,mhin:ny/2,:])
-    nummagzp_pert_out=np.sum(disk_zp_pert[nxin:nxout,ny/2:mhout,:])-np.sum(disk_zp_pert[nxin:nxout,mhin:ny/2,:])
+    nummagzp_pert_in=np.sum(bubble_zp_pert[nxin:nxout,ny//2:mhout,:])-np.sum(bubble_zp_pert[nxin:nxout,mhin:ny//2,:])
+    nummagzp_pert_out=np.sum(disk_zp_pert[nxin:nxout,ny//2:mhout,:])-np.sum(disk_zp_pert[nxin:nxout,mhin:ny//2,:])
 
     ptot=0.5*avg_bsq+(gam-1.0)*avg_ug
     integrand_denom=ptot*gdet*_dx1*_dx2*_dx3
@@ -4444,8 +4444,8 @@ def stressvtime(fnumber):
     alphamagrp=nummagrp/denom
     alphamagrp_pert=nummagrp_pert/denom
 
-    nummagzp=np.sum(integrand_zp[nxin:nxout,mhin:mhout,:])-np.sum(integrand_zp[nxin:nxout,mhin:ny/2,:])
-    nummagzp_pert=np.sum(integrand_zp_pert[nxin:nxout,ny/2:mhout,:])-np.sum(integrand_zp_pert[nxin:nxout,mhin:ny/2,:])
+    nummagzp=np.sum(integrand_zp[nxin:nxout,mhin:mhout,:])-np.sum(integrand_zp[nxin:nxout,mhin:ny//2,:])
+    nummagzp_pert=np.sum(integrand_zp_pert[nxin:nxout,ny//2:mhout,:])-np.sum(integrand_zp_pert[nxin:nxout,mhin:ny//2,:])
     alphamagzp=nummagzp/denom
     alphamagzp_pert=nummagzp_pert/denom
     print(alphamagrp_bubble, alphamagrp_disk)
@@ -4558,8 +4558,8 @@ def stressdecompvtime(fnumber):
     #total stress
     bubble_zp_tot=ma.masked_where(ibeta<40,integrand_zp)
     disk_zp_tot=ma.masked_where(ibeta>=40,integrand_zp)
-    nummagzp_bub_tot=np.sum(bubble_zp_tot[nxin:nxout,ny/2:mhout,:])-np.sum(bubble_zp_tot[nxin:nxout,mhin:ny/2,:])
-    nummagzp_disk_tot=np.sum(disk_zp_tot[nxin:nxout,ny/2:mhout,:])-np.sum(disk_zp_tot[nxin:nxout,mhin:ny/2,:])
+    nummagzp_bub_tot=np.sum(bubble_zp_tot[nxin:nxout,ny//2:mhout,:])-np.sum(bubble_zp_tot[nxin:nxout,mhin:ny//2,:])
+    nummagzp_disk_tot=np.sum(disk_zp_tot[nxin:nxout,ny//2:mhout,:])-np.sum(disk_zp_tot[nxin:nxout,mhin:ny//2,:])
     '''#mean field - masking not working because avg2d averages in phi, so no good way to get 1D ibeta
     bubble_zp_mean=ma.masked_where(ibeta[:,ny/2,:]<40,integrand_zp_mean)
     disk_zp_mean=ma.masked_where(ibeta[:,ny/2,:]>=40,integrand_zp_mean)
@@ -4568,18 +4568,18 @@ def stressdecompvtime(fnumber):
     #mean vertical, turbulent phi
     bubble_zp_cross1=ma.masked_where(ibeta<40,integrand_zp_cross1)
     disk_zp_cross1=ma.masked_where(ibeta>=40,integrand_zp_cross1)
-    nummagzp_bub_cross1=np.sum(bubble_zp_cross1[nxin:nxout,ny/2:mhout,:])-np.sum(bubble_zp_cross1[nxin:nxout,mhin:ny/2,:])
-    nummagzp_disk_cross1=np.sum(disk_zp_cross1[nxin:nxout,ny/2:mhout,:])-np.sum(disk_zp_cross1[nxin:nxout,mhin:ny/2,:])
+    nummagzp_bub_cross1=np.sum(bubble_zp_cross1[nxin:nxout,ny//2:mhout,:])-np.sum(bubble_zp_cross1[nxin:nxout,mhin:ny//2,:])
+    nummagzp_disk_cross1=np.sum(disk_zp_cross1[nxin:nxout,ny//2:mhout,:])-np.sum(disk_zp_cross1[nxin:nxout,mhin:ny//2,:])
     #turbulent vertical, mean phi
     bubble_zp_cross2=ma.masked_where(ibeta<40,integrand_zp_cross2)
     disk_zp_cross2=ma.masked_where(ibeta>=40,integrand_zp_cross2)
-    nummagzp_bub_cross2=np.sum(bubble_zp_cross2[nxin:nxout,ny/2:mhout,:])-np.sum(bubble_zp_cross2[nxin:nxout,mhin:ny/2,:])
-    nummagzp_disk_cross2=np.sum(disk_zp_cross2[nxin:nxout,ny/2:mhout,:])-np.sum(disk_zp_cross2[nxin:nxout,mhin:ny/2,:])
+    nummagzp_bub_cross2=np.sum(bubble_zp_cross2[nxin:nxout,ny//2:mhout,:])-np.sum(bubble_zp_cross2[nxin:nxout,mhin:ny//2,:])
+    nummagzp_disk_cross2=np.sum(disk_zp_cross2[nxin:nxout,ny//2:mhout,:])-np.sum(disk_zp_cross2[nxin:nxout,mhin:ny//2,:])
     #both turbulent
     bubble_zp_pert=ma.masked_where(ibeta<40,integrand_zp_pert)
     disk_zp_pert=ma.masked_where(ibeta>=40,integrand_zp_pert)
-    nummagzp_bub_pert=np.sum(bubble_zp_pert[nxin:nxout,ny/2:mhout,:])-np.sum(bubble_zp_pert[nxin:nxout,mhin:ny/2,:])
-    nummagzp_disk_pert=np.sum(disk_zp_pert[nxin:nxout,ny/2:mhout,:])-np.sum(disk_zp_pert[nxin:nxout,mhin:ny/2,:])
+    nummagzp_bub_pert=np.sum(bubble_zp_pert[nxin:nxout,ny//2:mhout,:])-np.sum(bubble_zp_pert[nxin:nxout,mhin:ny//2,:])
+    nummagzp_disk_pert=np.sum(disk_zp_pert[nxin:nxout,ny//2:mhout,:])-np.sum(disk_zp_pert[nxin:nxout,mhin:ny//2,:])
 
     ptot=0.5*avg_bsq+(gam-1.0)*avg_ug
     integrand_denom=ptot*gdet*_dx1*_dx2*_dx3
@@ -4620,11 +4620,11 @@ def stressdecompvtime(fnumber):
     alphamagrp_cross2=nummagrp_cross2/denom
     alphamagrp_pert=nummagrp_pert/denom
 
-    nummagzp_tot=np.sum(integrand_zp[nxin:nxout,mhin:mhout,:])-np.sum(integrand_zp[nxin:nxout,mhin:ny/2,:])
-    nummagzp_mean=np.sum(integrand_zp_mean[nxin:nxout,mhin:mhout,:])-np.sum(integrand_zp_mean[nxin:nxout,mhin:ny/2,:])
-    nummagzp_cross1=np.sum(integrand_zp_cross1[nxin:nxout,ny/2:mhout,:])-np.sum(integrand_zp_cross1[nxin:nxout,mhin:ny/2,:])
-    nummagzp_cross2=np.sum(integrand_zp_cross2[nxin:nxout,ny/2:mhout,:])-np.sum(integrand_zp_cross2[nxin:nxout,mhin:ny/2,:])
-    nummagzp_pert=np.sum(integrand_zp_pert[nxin:nxout,ny/2:mhout,:])-np.sum(integrand_zp_pert[nxin:nxout,mhin:ny/2,:])
+    nummagzp_tot=np.sum(integrand_zp[nxin:nxout,mhin:mhout,:])-np.sum(integrand_zp[nxin:nxout,mhin:ny//2,:])
+    nummagzp_mean=np.sum(integrand_zp_mean[nxin:nxout,mhin:mhout,:])-np.sum(integrand_zp_mean[nxin:nxout,mhin:ny//2,:])
+    nummagzp_cross1=np.sum(integrand_zp_cross1[nxin:nxout,ny//2:mhout,:])-np.sum(integrand_zp_cross1[nxin:nxout,mhin:ny//2,:])
+    nummagzp_cross2=np.sum(integrand_zp_cross2[nxin:nxout,ny//2:mhout,:])-np.sum(integrand_zp_cross2[nxin:nxout,mhin:ny//2,:])
+    nummagzp_pert=np.sum(integrand_zp_pert[nxin:nxout,ny//2:mhout,:])-np.sum(integrand_zp_pert[nxin:nxout,mhin:ny//2,:])
     alphamagzp_tot=nummagzp_tot/denom
     alphamagzp_mean=nummagzp_mean/denom
     alphamagzp_cross1=nummagzp_cross1/denom
