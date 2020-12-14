@@ -1,6 +1,19 @@
 ###The version I actually used for the MADNT mRT paper
 ###needs a lot of commenting and to updated to work with Python3 (Megan 6/5/20)
 
+###Declaring global variables here to avoid py3 bugs (Max 12/14/20)
+global _dx1,_dx2,_dx3,nx,ny,nz
+global numcolumns
+global nzgdump
+global gotrad
+global modelname
+global rhoeddcode
+global KAPPAUSER, KAPPAESUSER
+global rho, rholab
+global ug, B, gdetB, urad, bsq, mu, ud, uu, beta, betatot
+global tauradintegrated,tauradeffintegrated
+
+
 def setpythonpath():
     # PYTHONPATH from os environment might include arbitrary paths, including those not accessible on supercomputer by a compute node, so set manually
     # Assumes if user needs local "py" that copied to local directory, then force use of that version.
@@ -376,7 +389,7 @@ def arctanmath(x,y):
 
 # trans requires input of full 3d Vmetric (not just use2d gdump version)
 def set_transV2Vmetric(Vmetric=None,b0=0.0):
-    #
+    global nx
     # r,h,ph are Vmetric[] for both trans matrices.
     # these are full 3D r,h,ph
     r=Vmetric[1]
@@ -7068,6 +7081,7 @@ def rrdump(dumpname):
 # gd2\[\([A-Za-z0-9:\+\ -]+\),\([A-Za-z0-9:\+\ -]+\),\([A-Za-z0-9:\+\ -]+\),\([A-Za-z0-9:\+\ -]+\)\] -> gd2[\4,\3,\2,\1]
 # only works for 1 or 2 for newf? for now
 def reresrdump(dumpname,writenew=False,newf1=None,newf2=None,newf3=None,divbclean=True,fieldsmooth=True):
+    global nx
     # get dx1,2,3
     flist = glob.glob( os.path.join("dumps/", "fieldline*.bin") )
     # can specify fieldline
@@ -7196,7 +7210,7 @@ def reresrdump(dumpname,writenew=False,newf1=None,newf2=None,newf3=None,divbclea
         if fieldsmooth==True:
             print("Start smoothing result3"); sys.stdout.flush()
             # fix global _dx?
-            global _dx1,_dx2,_dx3,nx,ny,nz
+            # global _dx1,_dx2,_dx3,nx,ny,nz
             nx=nx*newf1
             ny=ny*newf2
             nz=nz*newf3
@@ -8198,7 +8212,6 @@ def rfd(fieldlinefilename,**kwargs):
     #
     #
     #
-    global numcolumns
     print(("numcolumnshere: %d" % (numcolumns))) ; sys.stdout.flush()
     #
     gotgdetB=0
@@ -8250,7 +8263,7 @@ def rfd(fieldlinefilename,**kwargs):
     #
     #############################################################################################
     # see if THETAROT non-zero so need to rotate and transform data
-    global nzgdump
+    
     #
     #
     #DEBUGTHETAROT=1
@@ -14378,8 +14391,8 @@ def plotqtyvstime(qtymem,fullresultsoutput=0,whichplot=None,ax=None,findex=None,
         print(("gotrad newly defined as %d" % (gotrad))) ; sys.stdout.flush()
     else:
         print(("gotrad already defined as %d" % (gotrad))) ; sys.stdout.flush()
-    # controls many things for radiation runs
-    global gotrad
+    ##  controls many things for radiation runs
+    # global gotrad
     showrad=gotrad # assume if got, then show.
     #
     # need to compute this again
@@ -25274,7 +25287,7 @@ def mkmovie(framesize=50, domakeavi=False):
     if 0==1:# when running on command line with ipython, override for just 1 file.  Also comment out "if findex % whichn != whichi:" below.
         whichn=1
         whichi=1
-        global modelname
+        # global modelname
         modelname="rad1"
     #
     #
@@ -26071,7 +26084,7 @@ def mkavgfigs():
         global rho,rholab,ug,B,gdetB,Erf,urad,uradu,bsq,mu,ud,uu,beta,betatot #,uutrue
         global KAPPAUSER,KAPPAESUSER,tauradintegrated,tauradeffintegrated
         #
-        global GGG,CCCTRUE,MSUNCM,MPERSUN,LBAR,TBAR,VBAR,RHOBAR,MBAR,ENBAR,UBAR,TEMPBAR,ARAD_CODE_DEF,XFACT,ZATOM,AATOM,MUE,MUI,OPACITYBAR,MASSCM,KORAL2HARMRHO1,Leddcode,Mdoteddcode,rhoeddcode,ueddcode,beddcode
+        global GGG,CCCTRUE,MSUNCM,MPERSUN,LBAR,TBAR,VBAR,RHOBAR,MBAR,ENBAR,UBAR,TEMPBAR,ARAD_CODE_DEF,XFACT,ZATOM,AATOM,MUE,MUI,OPACITYBAR,MASSCM,KORAL2HARMRHO1,Leddcode,Mdoteddcode,ueddcode,beddcode
         rddims(gotrad)
         #
         rho=avg_rho
@@ -26858,8 +26871,8 @@ def mkavgfigs():
         ug=avg_ug
         urad=avg_urad
         uu=avg_uu
-        # get kappa's
-        global KAPPAUSER,KAPPAESUSER
+        ## get kappa's
+        # global KAPPAESUSER
         getkappas(gotrad)
         # get tau from averaged data
         taurad1integrated,taurad1flipintegrated,taurad2integrated,taurad2flipintegrated,tauradintegrated,tauradeff1integrated,tauradeff1flipintegrated,tauradeff2integrated,tauradeff2flipintegrated,tauradeffintegrated=compute_taurad()
@@ -26888,10 +26901,8 @@ def mkavgfigs():
         #avg1.write("#avg_rho avg_ug avg_bsq avg_unb avg_uu avg_bu avg_ud avg_bd avg_B avg_gdetB avg_omegaf2 avg_omegaf2b avg_omegaf1 avg_omegaf1b avg_rhouu avg_rhobu avg_rhoud avg_rhobd avg_uguu avg_ugud avg_Tud avg_fdd avg_rhouuud avg_uguuud avg_bsquuud avg_bubd avg_uuud avg_TudEM  avg_TudMA  avg_TudPA  avg_TudEN  avg_TudRAD  avg_mu  avg_sigma  avg_bsqorho  avg_absB  avg_absgdetB  avg_psisq avg_gamma gdet dxdxp11 dxdxp22 dxdxp12 dxdxp21 dxdxp33 avg_absuu avg_absbu avg_absud avg_absbd avg_absomegaf2 avg_absomegaf2b avg_absomegaf1 avg_absomegaf1b avg_absrhouu avg_absfdd avg_KAPPAUSER avg_KAPPAESUSER avg_tauradintegrated")
         print("Doing field mkframe")
         sys.stdout.flush()
-        global rho,rholab,ug,B,gdetB,Erf,urad,uradu,bsq,mu,ud,uu,beta,betatot
-        global KAPPAUSER,KAPPAESUSER,tauradintegrated,tauradeffintegrated
-        #
-        global GGG,CCCTRUE,MSUNCM,MPERSUN,LBAR,TBAR,VBAR,RHOBAR,MBAR,ENBAR,UBAR,TEMPBAR,ARAD_CODE_DEF,XFACT,ZATOM,AATOM,MUE,MUI,OPACITYBAR,MASSCM,KORAL2HARMRHO1,Leddcode,Mdoteddcode,rhoeddcode,ueddcode,beddcode
+        global Erf,uradu
+        global GGG,CCCTRUE,MSUNCM,MPERSUN,LBAR,TBAR,VBAR,RHOBAR,MBAR,ENBAR,UBAR,TEMPBAR,ARAD_CODE_DEF,XFACT,ZATOM,AATOM,MUE,MUI,OPACITYBAR,MASSCM,KORAL2HARMRHO1,Leddcode,Mdoteddcode,ueddcode,beddcode
         rddims(gotrad)
         #
         rho=avg_rho
@@ -28694,7 +28705,6 @@ def harmradtest1(path=None,fil=None):
     #len = 120
     len=1E3
     ncell=800
-    global taurad2integrated,tauradeffintegrated
 
     pg = (5.0/3.0-1)*ug
     Tg = pg/rho

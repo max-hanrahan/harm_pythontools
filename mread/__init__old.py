@@ -1,5 +1,10 @@
 ###is actually old - also doesn't have MADNT mRT stuff (Megan 6/5/20)
-
+###Declaring global variables here to conform to py3 syntax (Max 12/14/20)
+global numcolumns
+global nzgdump
+global gotrad
+global rho,rholab,ug,B,gdetB,Erf,uradu,bsq,mu,ud,uu,beta
+global KAPPAUSER,KAPPAESUSER,tauradintegrated
 def setpythonpath():
     # PYTHONPATH from os environment might include arbitrary paths, including those not accessible on supercomputer by a compute node, so set manually
     # Assumes if user needs local "py" that copied to local directory, then force use of that version.
@@ -7382,7 +7387,6 @@ def rfd(fieldlinefilename,**kwargs):
     #
     #
     #
-    global numcolumns
     print(("numcolumnshere: %d" % (numcolumns))) ; sys.stdout.flush()
     #
     gotgdetB=0
@@ -7434,7 +7438,6 @@ def rfd(fieldlinefilename,**kwargs):
     #
     #
     # see if THETAROT non-zero so need to rotate and transform data
-    global nzgdump
     #
     #
     #DEBUGTHETAROT=1
@@ -13358,7 +13361,7 @@ def plotqtyvstime(qtymem,fullresultsoutput=0,whichplot=None,ax=None,findex=None,
     else:
         print(("gotrad already defined as %d" % (gotrad))) ; sys.stdout.flush()
     # controls many things for radiation runs
-    global gotrad
+    # global gotrad
     showrad=gotrad # assume if got, then show.
     #
     # need to compute this again
@@ -25457,8 +25460,6 @@ def mkavgfigs():
         #avg1.write("#avg_rho avg_ug avg_bsq avg_unb avg_uu avg_bu avg_ud avg_bd avg_B avg_gdetB avg_omegaf2 avg_omegaf2b avg_omegaf1 avg_omegaf1b avg_rhouu avg_rhobu avg_rhoud avg_rhobd avg_uguu avg_ugud avg_Tud avg_fdd avg_rhouuud avg_uguuud avg_bsquuud avg_bubd avg_uuud avg_TudEM  avg_TudMA  avg_TudPA  avg_TudEN  avg_TudRAD  avg_mu  avg_sigma  avg_bsqorho  avg_absB  avg_absgdetB  avg_psisq avg_gamma gdet dxdxp11 dxdxp22 dxdxp12 dxdxp21 dxdxp33 avg_absuu avg_absbu avg_absud avg_absbd avg_absomegaf2 avg_absomegaf2b avg_absomegaf1 avg_absomegaf1b avg_absrhouu avg_absfdd avg_KAPPAUSER avg_KAPPAESUSER avg_tauradintegrated")
         print("Doing field mkframe")
         sys.stdout.flush()
-        global rho,rholab,ug,B,gdetB,Erf,uradu,bsq,mu,ud,uu,beta
-        global KAPPAUSER,KAPPAESUSER,tauradintegrated
         #
         global GGG,CCCTRUE,MSUNCM,MPERSUN,LBAR,TBAR,VBAR,RHOBAR,MBAR,ENBAR,UBAR,TEMPBAR,ARAD_CODE_DEF,XFACT,ZATOM,AATOM,MUE,MUI,OPACITYBAR,MASSCM,KORAL2HARMRHO1
         if gotrad==1:
