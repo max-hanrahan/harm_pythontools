@@ -4,7 +4,8 @@ global numcolumns
 global gotrad
 global modelname
 global KAPPAUSER,KAPPAESUSER,tauradintegrated,tauradeffintegrated
-global rho, rholab, ug
+global rho, rholab
+global ug, B,gdetB,Erf,urad,uradu,bsq,mu,ud,uu,beta,betatot
 
 # global 
 def setpythonpath():
@@ -26888,10 +26889,8 @@ def mkavgfigs():
         #avg1.write("#avg_rho avg_ug avg_bsq avg_unb avg_uu avg_bu avg_ud avg_bd avg_B avg_gdetB avg_omegaf2 avg_omegaf2b avg_omegaf1 avg_omegaf1b avg_rhouu avg_rhobu avg_rhoud avg_rhobd avg_uguu avg_ugud avg_Tud avg_fdd avg_rhouuud avg_uguuud avg_bsquuud avg_bubd avg_uuud avg_TudEM  avg_TudMA  avg_TudPA  avg_TudEN  avg_TudRAD  avg_mu  avg_sigma  avg_bsqorho  avg_absB  avg_absgdetB  avg_psisq avg_gamma gdet dxdxp11 dxdxp22 dxdxp12 dxdxp21 dxdxp33 avg_absuu avg_absbu avg_absud avg_absbd avg_absomegaf2 avg_absomegaf2b avg_absomegaf1 avg_absomegaf1b avg_absrhouu avg_absfdd avg_KAPPAUSER avg_KAPPAESUSER avg_tauradintegrated")
         print("Doing field mkframe")
         sys.stdout.flush()
-        global ug,B,gdetB,Erf,urad,uradu,bsq,mu,ud,uu,beta,betatot
-        global KAPPAUSER,KAPPAESUSER,tauradintegrated,tauradeffintegrated
         #
-        global GGG,CCCTRUE,MSUNCM,MPERSUN,LBAR,TBAR,VBAR,RHOBAR,MBAR,ENBAR,UBAR,TEMPBAR,ARAD_CODE_DEF,XFACT,ZATOM,AATOM,MUE,MUI,OPACITYBAR,MASSCM,KORAL2HARMRHO1,Leddcode,Mdoteddcode,rhoeddcode,ueddcode,beddcode
+        global GGG,CCCTRUE,MSUNCM,MPERSUN,LBAR,TBAR,VBAR,RHOBAR,MBAR,ENBAR,UBAR,TEMPBAR,ARAD_CODE_DEF,XFACT,ZATOM,AATOM,MUE,MUI,OPACITYBAR,MASSCM,KORAL2HARMRHO1,Leddcode,Mdoteddcode,ueddcode,beddcode
         rddims(gotrad)
         #
         rho=avg_rho
@@ -28693,7 +28692,7 @@ def harmradtest1(path=None,fil=None):
     #len = 120
     len=1E3
     ncell=800
-    global taurad2integrated,tauradeffintegrated
+    # global taurad2integrated,tauradeffintegrated
 
     pg = (5.0/3.0-1)*ug
     Tg = pg/rho
