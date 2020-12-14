@@ -1,7 +1,7 @@
 ###Simplified code with only the functions needed to replicate Marshall, McKinney, and Avara 2018
 ###needs a lot of commenting and to updated to work with Python3 (Megan 6/5/20)
 
-###Initializing global variables to conform to python3 syntax
+###Initializing global variables to conform to python3 syntax (Max 12/14/20)
 global numcolumns
 global nzgdump
 
@@ -1204,8 +1204,8 @@ def gridcellverts():
     #tjf=np.zeros(tj.shape[0]+1,tj.shape[1]+1,tj.shape[2]+1)
     #tkf=np.zeros(tk.shape[0]+1,tk.shape[1]+1,tk.shape[2]+1)
     tif=np.arange(0,(nx+1)*(ny+1)*(lnz+1)).reshape((nx+1,ny+1,lnz+1),order='F')
-    tjf=np.arange(0,(nx+1)*(ny+1)*(lnz+1)).reshape((nx+1,ny+1,lnz+1),order='F')
-    tkf=np.arange(0,(nx+1)*(ny+1)*(lnz+1)).reshape((nx+1,ny+1,lnz+1),order='F')
+    tjf=np.arange(0,(nx+1)*(ny+1)*(lnz+1), dtype = 'float').reshape((nx+1,ny+1,lnz+1),order='F')
+    tkf=np.arange(0,(nx+1)*(ny+1)*(lnz+1),dtype = 'float').reshape((nx+1,ny+1,lnz+1),order='F')
     tif %= (nx+1)
     tjf /= (nx+1)
     tjf %= (ny+1)
@@ -1223,7 +1223,7 @@ def rfd(fieldlinefilename,**kwargs):
     #Velocity components: u1, u2, u3, 
     #Cell-centered magnetic field components: B1, B2, B3, 
     #Face-centered magnetic field components multiplied by metric determinant: gdetB1, gdetB2, gdetB3
-    global rho,ug,uu,B,gdetB,Erf,urad,uradu
+    global rho,ug,uu,B,gdetB,Erf,urad,uradu, numcolumns
     #
     #read image
     #
@@ -2232,9 +2232,9 @@ def getrhouclean(rho,ug,uu):
     #
     print(("t=%g" % (t)))
     print("r")
-    print((r[:,ny/2,0]))
+    print((r[:,ny//2,0]))
     print("condmaxbsqorhorhs along r")
-    print((condmaxbsqorhorhs[:,ny/2,0]))
+    print((condmaxbsqorhorhs[:,ny//2,0]))
     print("condmaxbsqorho along eq")
     print((condmaxbsqorho[0,:,0]))
     #
