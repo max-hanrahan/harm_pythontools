@@ -3718,11 +3718,22 @@ def test_random_points():
     print(x_cart[0][digit], y_cart[0][digit], z_cart[0][digit])
 
 def load_good_array():
+    # what the rest of today is for
     import yt
     import numpy
-    # what the rest of today is for
-    pass
 
-    #select spherical coords and make sure they plot to the same place
-    # throw them in mathematica or something
+    # the hexahedral mesh
+    xgrid, ygrid, zgrid = make_good_array()
 
+    # arr is actually the data, so this should change
+    arr = "dumps/gdump.bin"
+
+    #this is copy/pasted, should prob change names
+    coordinates,connectivity = yt.hexahedral_connectivity(xgrid,ygrid,zgrid)
+
+    # attempt to load it:
+    bbox = numpy.array([[numpy.min(xgrid),numpy.max(xgrid)],
+                    [numpy.min(ygrid),numpy.max(ygrid)],
+                    [numpy.min(zgrid),numpy.max(zgrid)]])
+    data = {"density" : arr}
+    ds = yt.load_hexahedral_mesh(data,conn,coords,1.0,bbox=bbox)
