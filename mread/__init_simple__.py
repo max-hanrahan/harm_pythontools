@@ -3768,24 +3768,12 @@ def grid3d_rhph(dumpname,use2d=False,doface=False,usethetarot0=False): #read gri
     global nzgdumptrue
     nzgdumptrue=nz
     #
-    global nxgdump,nygdump,nzgdump,THETAROTgdump
+    global nxgdump,nygdump,nzgdump
     nxgdump=nx
     nygdump=ny
     nzgdump=nz
-    THETAROTgdump=THETAROT
-    #
-    # determine if need to read THETAROT0 or normal general gdump
-    #../../dumps/gdump.THETAROT0.bin
-    #
-    #
-    # for THETAROT!=0, assume gdump.THETAROT0.bin exists corresponding to the non-rotated THETAROT=0 version.
-    # Using this vastly speeds-up read-in and doesn't use excessive (too much!) memory required for full 3D interpolation of (a minimum) gv3 while reading in all other things because binary and using np.fromfile().
-    if np.fabs(THETAROT-0.0)>1E-13 and use2d==True:
-        realdumpname="gdump.THETAROT0.bin"
-        # NOTEMARK: older sasha runs that weren't tilted had 32-64 phi-zones, whereas new has 128 phi-zones.  But once read-in, only use one-phi zone for this file and that's all that's needed.  The actual nz and full 3D things (ti,tj,tk,x1,x2,x3,r,h,ph) will be overwritten or corrected when rfd() is called
-        # Note:  So for tilted runs, *only* need non-tilted gdump and that only has to be axisymmetric for BH solutions!
-    else:
-        realdumpname=dumpname
+
+    realdumpname=dumpname
     #
     print(( "realdumpname=%s" % (realdumpname) )) ; sys.stdout.flush()
     #
@@ -3821,10 +3809,7 @@ def grid3d_load_rhph(dumpname=None,use2d=False,doface=False,loadsimple=False): #
     Rout=myfloatalt(float(header[15]))
     #read grid dump per-cell data
     #
-    if use2d:
-        lnz = 1
-    else:
-        lnz = nz
+    lnz = nz
     #
     print( "Done reading grid header" ) ; sys.stdout.flush()
     #
@@ -3852,16 +3837,9 @@ def grid3d_load_rhph(dumpname=None,use2d=False,doface=False,loadsimple=False): #
     # SUPERNOTEMARK: for use2d, note that tk depends upon \phi unlike all other things for a Kerr metric in standard coordinates
     r,h,ph = gd[6:9,:,:,:].view()
     #covariant metric components, g_{\mu\nu}
-    gv3 = gd[89:105].view().reshape((4,4,nx,ny,lnz), order='F').transpose(1,0,2,3,4)
     #
     # only load if not loading simple version required for THETAROT transformation of 3D grid
     if loadsimple==0:
-        #get the right order of indices by reversing the order of indices i,j(,k)
-        #conn=gd[9:73].view().reshape((4,4,4,nx,ny,lnz), order='F').transpose(2,1,0,3,4,5)
-        #contravariant metric components, g^{\mu\nu}
-        gn3 = gd[73:89].view().reshape((4,4,nx,ny,lnz), order='F').transpose(1,0,2,3,4)
-        #metric determinant
-        gdet = gd[105]
         # don't need ck, so don't load
         #ck = gd[106:110].view().reshape((4,nx,ny,lnz), order='F')
         #grid mapping Jacobian
