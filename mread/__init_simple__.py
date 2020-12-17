@@ -3814,20 +3814,11 @@ def grid3d_load_rhph(dumpname=None,use2d=False,doface=False,loadsimple=False): #
     print( "Done reading grid header" ) ; sys.stdout.flush()
     #
     ncols = 126
-    if dumpname.endswith(".bin"):
-        print(( "Start reading grid as binary with lnz=%d" % (lnz) )) ; sys.stdout.flush()
-        body = np.fromfile(gin,dtype=np.float64,count=ncols*nx*ny*lnz) 
-        gd = body.view().reshape((-1,nx,ny,lnz),order='F')
-        gin.close()
-        print(( "Done reading grid as binary with lnz=%d" % (lnz) )) ; sys.stdout.flush()
-    else:
-        print(( "Start reading grid as text with lnz=%d" % (lnz) )) ; sys.stdout.flush()
-        gin.close()
-        gd = np.loadtxt( "dumps/" + dumpname, 
-                      dtype=np.float64, 
-                      skiprows=1, 
-                      unpack = True ).view().reshape((126,nx,ny,lnz), order='F')
-        print(( "End reading grid as text with lnz=%d" % (lnz) )) ; sys.stdout.flush()
+    print(( "Start reading grid as binary with lnz=%d" % (lnz) )) ; sys.stdout.flush()
+    body = np.fromfile(gin,dtype=np.float64,count=ncols*nx*ny*lnz) 
+    gd = body.view().reshape((-1,nx,ny,lnz),order='F')
+    gin.close()
+    print(( "Done reading grid as binary with lnz=%d" % (lnz) )) ; sys.stdout.flush()
     gd=myfloat(gd)
     gc.collect()
     #
@@ -3836,14 +3827,8 @@ def grid3d_load_rhph(dumpname=None,use2d=False,doface=False,loadsimple=False): #
     # always load ti,tj,tk,x1,x2,x3,r,h,ph
     # SUPERNOTEMARK: for use2d, note that tk depends upon \phi unlike all other things for a Kerr metric in standard coordinates
     r,h,ph = gd[6:9,:,:,:].view()
-    #covariant metric components, g_{\mu\nu}
-    #
-    # only load if not loading simple version required for THETAROT transformation of 3D grid
-    if loadsimple==0:
-        # don't need ck, so don't load
-        #ck = gd[106:110].view().reshape((4,nx,ny,lnz), order='F')
-        #grid mapping Jacobian
-        dxdxp = gd[110:126].view().reshape((4,4,nx,ny,lnz), order='F').transpose(1,0,2,3,4)
+
+    dxdxp = gd[110:126].view().reshape((4,4,nx,ny,lnz), order='F').transpose(1,0,2,3,4)
 
 def gridcellverts_rhph():
     ##################################
@@ -3882,9 +3867,28 @@ def gridcellverts_rhph():
     #extend in theta
     phf[:,ny,:]   =   phf[:,ny-1,:]
 
-def load_simplified_array():
-    # should load the r h and ph array as a list of vertices
+def make_simplified_array():
+    # should create the r h and ph array as a list of vertices
     grid3d_rhph('gdump.bin', use2d=False) # loads the data
     gridcellverts_rhph() # converts to corners
 
-    return np.column_stack((rf.flatten(), hf.flatten(), phf.flatten()))
+    stacked_array = np.column_stack((rf.flatten(), hf.flatten(), phf.flatten()))
+    return stacked_array
+
+def load_simplified_array():
+    import yt
+    # this function's goal is to load the data using yt. Doesn't work yet.
+    make_simplified_array() # call that to get rf hf and phf
+
+    # hexahedral_connectivity currently causes memory problems: 
+    # the error is: "array is too big; `arr.size * arr.dtype.itemsize` is larger than the maximum possible size."
+    coords, conn = yt.hexahedral_connectivity(rf.flatten(), hf.flatten(), phf.flatten())
+
+    ds = yt.load_unstructured_mesh(dict(stacked_array), bbox = [[0.0, 10000.0], [0.0, np.pi], [0.0, 2*np.pi]], geometry = 'spherical')
+    s = ds.slice(2, np.pi/2)
+    s.save()
+
+def convert_simplified_array():
+    # this will evenutally convert the array of vertices to xyz coords
+    # i am waiting to do it until load_simplified_array() is done
+    pass
