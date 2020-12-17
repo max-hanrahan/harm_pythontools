@@ -3689,7 +3689,7 @@ def velinterp(fnumber, rng, extent, ncell):
 
 def make_good_array():
     # first we call the functions to get rh, hf, and phf
-    grid3d("gdump.bin",use2d = True)
+    grid3d("gdump.bin",use2d = False)
     gridcellverts()
 
     x_cart = np.zeros_like(rf)
@@ -3699,6 +3699,8 @@ def make_good_array():
     x_cart=rf* np.sin(hf)*np.cos(phf)
     y_cart=rf* np.sin(hf)*np.sin(phf)
     z_cart=rf*np.cos(hf)
+
+    print(x_cart.size)
 
     return x_cart, y_cart, z_cart
 
@@ -3722,26 +3724,153 @@ use2dglobal = True
 def load_good_array():
     # what the rest of today is for
     import yt
-    import numpy
+
     grid3d('gdump.bin', use2d=True) # loads the data
     rfd('fieldline12300.bin') # I call this to initialize rho
 
     # the hexahedral mesh
     xgrid, ygrid, zgrid = make_good_array()
 
-
     # unpack each to be a 1d array, with no missing values
     xgrid = np.concatenate([xgrid[0][:,0], xgrid[1][:,1]])
     ygrid = np.concatenate([ygrid[0][:,0], ygrid[1][:,1]])
     zgrid = np.concatenate([zgrid[0][:,0], zgrid[1][:,1]])
 
-
     # this yt-command does not work yet:
     coords,conn = yt.hexahedral_connectivity(xgrid,ygrid,zgrid) # the syntax here should transform each 
 
     # attempt to load it:
-    bbox = numpy.array([[numpy.min(xgrid),numpy.max(xgrid)],
-                    [numpy.min(ygrid),numpy.max(ygrid)],
-                    [numpy.min(zgrid),numpy.max(zgrid)]])
+    bbox = np.array([[np.min(xgrid),np.max(xgrid)],
+                    [np.min(ygrid),np.max(ygrid)],
+                    [np.min(zgrid),np.max(zgrid)]])
     data = {"density" : rho}
     ds = yt.load_hexahedral_mesh(data,conn,coords,1.0,bbox=bbox)
+
+def grid3d_rhph(dumpname,use2d=False,doface=False,usethetarot0=False): #read grid dump file: header and body
+    # THIS IS A COPY of grid3d that only deals with r, h, and ph (Max 12/17)
+    #
+    #
+    if usethetarot0==True:
+        filename="dumps/gdump.THETAROT0.bin"
+        dumpname="gdump.THETAROT0.bin" # override input
+    else:
+        filename="dumps/gdump.bin"
+        # just use input dumpname
+    #
+    if os.path.isfile(filename):
+        # only need header of true gdump.bin to get true THETAROT
+        rfdheaderonly(filename)
+    else:
+        # if no gdump, use last fieldline file that is assumed to be consistent with gdump that didn't exist.
+        # allows non-creation of gdump if restarting with tilt from non-tilt run.  So then enver have to have gdump.bin with THETAROT tilt.
+        rfdheaderlastfile()
+    #
+    # for rfd() to use to see if different nz size
+    global nzgdumptrue
+    nzgdumptrue=nz
+    #
+    global nxgdump,nygdump,nzgdump,THETAROTgdump
+    nxgdump=nx
+    nygdump=ny
+    nzgdump=nz
+    THETAROTgdump=THETAROT
+    #
+    # determine if need to read THETAROT0 or normal general gdump
+    #../../dumps/gdump.THETAROT0.bin
+    #
+    #
+    # for THETAROT!=0, assume gdump.THETAROT0.bin exists corresponding to the non-rotated THETAROT=0 version.
+    # Using this vastly speeds-up read-in and doesn't use excessive (too much!) memory required for full 3D interpolation of (a minimum) gv3 while reading in all other things because binary and using np.fromfile().
+    if np.fabs(THETAROT-0.0)>1E-13 and use2d==True:
+        realdumpname="gdump.THETAROT0.bin"
+        # NOTEMARK: older sasha runs that weren't tilted had 32-64 phi-zones, whereas new has 128 phi-zones.  But once read-in, only use one-phi zone for this file and that's all that's needed.  The actual nz and full 3D things (ti,tj,tk,x1,x2,x3,r,h,ph) will be overwritten or corrected when rfd() is called
+        # Note:  So for tilted runs, *only* need non-tilted gdump and that only has to be axisymmetric for BH solutions!
+    else:
+        realdumpname=dumpname
+    #
+    print(( "realdumpname=%s" % (realdumpname) )) ; sys.stdout.flush()
+    #
+    # load axisymmetric metric-grid data
+    # this sets THETAROT=0 if THETAROT true is non-zero.  rfd() is responsible for setting THETAROT for each fieldline file so data inputted is transformed/interpolated correctly.
+    grid3d_load_rhph(dumpname=realdumpname,doface=doface,loadsimple=False)
+    #
+    # get other things
+    gridcellverts()
+    # 
+    gc.collect() #try to release unneeded memory
+    print( "Done grid3d!" ) ; sys.stdout.flush()
+
+def grid3d_load_rhph(dumpname=None,use2d=False,doface=False,loadsimple=False): #read grid dump file: header and body
+    #The internal cell indices along the three axes: (ti, tj, tk)
+    #The internal uniform coordinates, (x1, x2, x3), are mapped into the physical
+    #non-uniform coordinates, (r, h, ph), which correspond to radius (r), polar angle (theta), and toroidal angle (phi).
+    #There are more variables, e.g., dxdxp, which is the Jacobian of (x1,x2,x3)->(r,h,ph) transformation, that I can
+    #go over, if needed.
+    global Rin,Rout
+    global nzgdump, lnz, dxdxp
+    global r,h,ph
+    # global ck,conn
+    print(( "Reading grid from " + "dumps/" + dumpname + " ..." )) ; sys.stdout.flush()
+    gin = open( "dumps/" + dumpname, "rb" )
+    #
+    #First line of grid dump file is a text line that contains general grid information:
+    header = gin.readline().split()
+
+    #Spherical polar radius of the innermost radial cell
+    Rin=myfloatalt(float(header[14]))
+    #Spherical polar radius of the outermost radial cell
+    Rout=myfloatalt(float(header[15]))
+    #read grid dump per-cell data
+    #
+    if use2d:
+        lnz = 1
+    else:
+        lnz = nz
+    #
+    print( "Done reading grid header" ) ; sys.stdout.flush()
+    #
+    ncols = 126
+    if dumpname.endswith(".bin"):
+        print(( "Start reading grid as binary with lnz=%d" % (lnz) )) ; sys.stdout.flush()
+        body = np.fromfile(gin,dtype=np.float64,count=ncols*nx*ny*lnz) 
+        gd = body.view().reshape((-1,nx,ny,lnz),order='F')
+        gin.close()
+        print(( "Done reading grid as binary with lnz=%d" % (lnz) )) ; sys.stdout.flush()
+    else:
+        print(( "Start reading grid as text with lnz=%d" % (lnz) )) ; sys.stdout.flush()
+        gin.close()
+        gd = np.loadtxt( "dumps/" + dumpname, 
+                      dtype=np.float64, 
+                      skiprows=1, 
+                      unpack = True ).view().reshape((126,nx,ny,lnz), order='F')
+        print(( "End reading grid as text with lnz=%d" % (lnz) )) ; sys.stdout.flush()
+    gd=myfloat(gd)
+    gc.collect()
+    #
+    print( "Done reading grid" ) ; sys.stdout.flush()
+    #
+    # always load ti,tj,tk,x1,x2,x3,r,h,ph
+    # SUPERNOTEMARK: for use2d, note that tk depends upon \phi unlike all other things for a Kerr metric in standard coordinates
+    r,h,ph = gd[6:9,:,:,:].view()
+    #covariant metric components, g_{\mu\nu}
+    gv3 = gd[89:105].view().reshape((4,4,nx,ny,lnz), order='F').transpose(1,0,2,3,4)
+    #
+    # only load if not loading simple version required for THETAROT transformation of 3D grid
+    if loadsimple==0:
+        #get the right order of indices by reversing the order of indices i,j(,k)
+        #conn=gd[9:73].view().reshape((4,4,4,nx,ny,lnz), order='F').transpose(2,1,0,3,4,5)
+        #contravariant metric components, g^{\mu\nu}
+        gn3 = gd[73:89].view().reshape((4,4,nx,ny,lnz), order='F').transpose(1,0,2,3,4)
+        #metric determinant
+        gdet = gd[105]
+        # don't need ck, so don't load
+        #ck = gd[106:110].view().reshape((4,nx,ny,lnz), order='F')
+        #grid mapping Jacobian
+        dxdxp = gd[110:126].view().reshape((4,4,nx,ny,lnz), order='F').transpose(1,0,2,3,4)
+
+def load_simplified_array():
+    # should load the r h and ph array as a list of vertices
+    grid3d_rhph('gdump.bin', use2d=False) # loads the data
+    gridcellverts() # converts to corners
+
+    return np.column_stack((rf.flatten(), hf.flatten(), phf.flatten()))
