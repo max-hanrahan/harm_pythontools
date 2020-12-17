@@ -1162,7 +1162,6 @@ def grid3d_load(dumpname=None,use2d=False,doface=False,loadsimple=False): #read 
         #ck = gd[106:110].view().reshape((4,nx,ny,lnz), order='F')
         #grid mapping Jacobian
         dxdxp = gd[110:126].view().reshape((4,4,nx,ny,lnz), order='F').transpose(1,0,2,3,4)
-
 def gridcellverts():
     ##################################
     #CELL VERTICES:
@@ -3868,9 +3867,46 @@ def grid3d_load_rhph(dumpname=None,use2d=False,doface=False,loadsimple=False): #
         #grid mapping Jacobian
         dxdxp = gd[110:126].view().reshape((4,4,nx,ny,lnz), order='F').transpose(1,0,2,3,4)
 
+def gridcellverts_rhph():
+    ##################################
+    #CELL VERTICES:
+    global rf,hf,phf
+    #RADIAL:
+    #add an extra dimension to rf container since one more faces than centers
+    rf = np.zeros((r.shape[0]+1,r.shape[1]+1,r.shape[2]+1))
+    #operate on log(r): average becomes geometric mean, etc
+    rf[1:nx,0:ny,0:lnz] = (r[1:nx]*r[0:nx-1])**0.5 #- 0.125*(dxdxp[1,1,1:nx]/r[1:nx]-dxdxp[1,1,0:nx-1]/r[0:nx-1])*_dx1
+    #extend in theta
+    rf[1:nx,ny,0:lnz] = rf[1:nx,ny-1,0:lnz]
+    #extend in phi
+    rf[1:nx,:,lnz]   = rf[1:nx,:,lnz-1]
+    #extend in r
+    rf[0] = 0*rf[0] + Rin
+    rf[nx] = 0*rf[nx] + Rout
+    #ANGULAR:
+    hf = np.zeros((h.shape[0]+1,h.shape[1]+1,h.shape[2]+1))
+    hf[0:nx,1:ny,0:lnz] = 0.5*(h[:,1:ny]+h[:,0:ny-1]) #- 0.125*(dxdxp[2,2,:,1:ny]-dxdxp[2,2,:,0:ny-1])*_dx2
+    hf[1:nx-1,1:ny,0:lnz] = 0.5*(hf[0:nx-2,1:ny,0:lnz]+hf[1:nx-1,1:ny,0:lnz])
+    #populate ghost cells in r
+    hf[nx,1:ny,0:lnz] = hf[nx-1,1:ny,0:lnz]
+    #populate ghost cells in phi
+    hf[:,1:ny,lnz] = hf[:,1:ny,lnz-1]
+    #populate ghost cells in theta (note: no need for this since already initialized everything to zero)
+    hf[:,0] = 0*hf[:,0] + 0
+    hf[:,ny] = 0*hf[:,ny] + np.pi
+    #TOROIDAL:
+    phf = np.zeros((ph.shape[0]+1,ph.shape[1]+1,ph.shape[2]+1))
+    phf[0:nx,0:ny,0:lnz] = ph[0:nx,0:ny,0:lnz] - dxdxp[3,3,0,0,0]*0.5*_dx3
+    #extend in phi
+    phf[0:nx,0:ny,lnz]   = ph[0:nx,0:ny,lnz-1] + dxdxp[3,3,0,0,0]*0.5*_dx3
+    #extend in r
+    phf[nx,0:ny,:]   =   phf[nx-1,0:ny,:]
+    #extend in theta
+    phf[:,ny,:]   =   phf[:,ny-1,:]
+
 def load_simplified_array():
     # should load the r h and ph array as a list of vertices
     grid3d_rhph('gdump.bin', use2d=False) # loads the data
-    gridcellverts() # converts to corners
+    gridcellverts_rhph() # converts to corners
 
     return np.column_stack((rf.flatten(), hf.flatten(), phf.flatten()))
