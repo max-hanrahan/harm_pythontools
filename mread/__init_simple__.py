@@ -3728,12 +3728,16 @@ def load_good_array():
 
     # the hexahedral mesh
     xgrid, ygrid, zgrid = make_good_array()
-    
-    for desiredarray in xgrid, ygrid, zgrid:
-        np.append(desiredarray[:,0], desiredarray[:,1])
-        print(desiredarray[0].shape)
-    
-    coords,conn = yt.hexahedral_connectivity(xgrid[0][:,0],ygrid[0][:,0],zgrid[0][:,0])
+
+
+    # unpack each to be a 1d array, with no missing values
+    xgrid = np.concatenate([xgrid[0][:,0], xgrid[1][:,1]])
+    ygrid = np.concatenate([ygrid[0][:,0], ygrid[1][:,1]])
+    zgrid = np.concatenate([zgrid[0][:,0], zgrid[1][:,1]])
+
+
+    # this yt-command does not work yet:
+    coords,conn = yt.hexahedral_connectivity(xgrid,ygrid,zgrid) # the syntax here should transform each 
 
     # attempt to load it:
     bbox = numpy.array([[numpy.min(xgrid),numpy.max(xgrid)],
