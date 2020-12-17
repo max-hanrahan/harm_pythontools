@@ -3717,23 +3717,27 @@ def test_random_points():
     print("In cartesian:")
     print(x_cart[0][digit], y_cart[0][digit], z_cart[0][digit])
 
+# initializing this in a global scope, right here, ensures that rfd() returns no errors
+use2dglobal = True
 def load_good_array():
     # what the rest of today is for
     import yt
     import numpy
+    grid3d('gdump.bin', use2d=True) # loads the data
+    rfd('fieldline12300.bin') # I call this to initialize rho
 
     # the hexahedral mesh
     xgrid, ygrid, zgrid = make_good_array()
-
-    # arr is actually the data, so this should change
-    arr = "dumps/gdump.bin"
-
-    #this is copy/pasted, should prob change names
-    coordinates,connectivity = yt.hexahedral_connectivity(xgrid,ygrid,zgrid)
+    
+    for desiredarray in xgrid, ygrid, zgrid:
+        np.append(desiredarray[:,0], desiredarray[:,1])
+        print(desiredarray[0].shape)
+    
+    coords,conn = yt.hexahedral_connectivity(xgrid[0][:,0],ygrid[0][:,0],zgrid[0][:,0])
 
     # attempt to load it:
     bbox = numpy.array([[numpy.min(xgrid),numpy.max(xgrid)],
                     [numpy.min(ygrid),numpy.max(ygrid)],
                     [numpy.min(zgrid),numpy.max(zgrid)]])
-    data = {"density" : arr}
+    data = {"density" : rho}
     ds = yt.load_hexahedral_mesh(data,conn,coords,1.0,bbox=bbox)
