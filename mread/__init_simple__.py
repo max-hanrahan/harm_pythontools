@@ -3714,6 +3714,7 @@ def test_random_points():
     digit = rnd.randint(0, 96)
     print("Digit chosen: " + str(digit))
     print("in spherical:")
+    print(rf.shape)
     print(rf[0][digit], hf[0][digit], phf[0][digit])
     print("In cartesian:")
     print(x_cart[0][digit], y_cart[0][digit], z_cart[0][digit])
@@ -3877,8 +3878,11 @@ def make_simplified_array():
 
 def load_simplified_array():
     import yt
+    grid3d('gdump.bin', use2d=False) # loads the data
+    rfd('fieldline12300.bin') # I call this to initialize rho
+
     # this function's goal is to load the data using yt. Doesn't work yet.
-    make_simplified_array() # call that to get rf hf and phf
+    gridcellverts_rhph() # call that to get rf hf and phf
 
     # splits the 3d arrays into their unique columns
     unique_r = rf[:,0,0]
@@ -3889,11 +3893,13 @@ def load_simplified_array():
     xf=int(iofr(50))
 
     coords, conn = yt.hexahedral_connectivity(unique_r, unique_h, unique_ph)
-    return coords, conn
-
-    ds = yt.load_hexahedral_mesh(dict(rho), bbox = [[0.0, 10000.0], [0.0, np.pi], [0.0, 2*np.pi]], geometry = 'spherical')
-    s = ds.slice(2, np.pi/2)
-    s.save()
+    #return coords, conn
+    print(coords.shape, conn.shape)
+    data = {"density" : rho}
+    ds = yt.load_hexahedral_mesh(data, conn, coords, bbox = np.array([[0.0, 10000.0], [0.0, np.pi], [0.0, 2*np.pi]]), geometry = 'spherical')
+    #print(ds)
+    s = ds.print_key_parameters()
+    print(s)
 
 def convert_simplified_array():
     # convert the array of vertices to xyz coords
