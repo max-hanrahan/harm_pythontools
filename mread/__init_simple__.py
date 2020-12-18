@@ -3873,32 +3873,39 @@ def make_simplified_array():
     gridcellverts_rhph() # converts to corners
 
     stacked_array = np.column_stack((rf.flatten(), hf.flatten(), phf.flatten()))
-    return stacked_array
+    return stacked_array, stacked_array.shape, np.unique(stacked_array, axis = 0), np.unique(stacked_array, axis = 0).shape
 
 def load_simplified_array():
     import yt
     # this function's goal is to load the data using yt. Doesn't work yet.
     make_simplified_array() # call that to get rf hf and phf
 
-    # hexahedral_connectivity currently causes memory problems:
-    # the error is: "array is too big; `arr.size * arr.dtype.itemsize` is larger than the maximum possible size."
+    # splits the 3d arrays into their unique columns
     unique_r = rf[:,0,0]
     unique_h = hf[0,:,0]
     unique_ph = phf[0,0,:]
-    # the other thing: truncate r at r = 50
 
+    # the other thing: truncate r at r = 50 if it's too big
     xf=int(iofr(50))
 
     coords, conn = yt.hexahedral_connectivity(unique_r, unique_h, unique_ph)
-
     return coords, conn
 
-    # ds = yt.load_hexahedral_mesh(dict(rho), bbox = [[0.0, 10000.0], [0.0, np.pi], [0.0, 2*np.pi]], geometry = 'spherical')
-    # s = ds.slice(2, np.pi/2)
-    # s.save()
+    ds = yt.load_hexahedral_mesh(dict(rho), bbox = [[0.0, 10000.0], [0.0, np.pi], [0.0, 2*np.pi]], geometry = 'spherical')
+    s = ds.slice(2, np.pi/2)
+    s.save()
 
 def convert_simplified_array():
-    # this will evenutally convert the array of vertices to xyz coords
-    # i am waiting to do it until load_simplified_array() is done
+    # convert the array of vertices to xyz coords
     # use this to convert make_simp to cartes (which we can't use hex_conn for)
-    pass
+    simplified_array = make_simplified_array()
+
+    x_cart = np.zeros_like(rf.flatten())
+    y_cart = np.zeros_like(hf.flatten())
+    z_cart = np.zeros_like(phf.flatten())
+
+    x_cart=rf.flatten()* np.sin(hf.flatten())*np.cos(phf.flatten())
+    y_cart=rf.flatten()* np.sin(hf.flatten())*np.sin(phf.flatten())
+    z_cart=rf.flatten()*np.cos(hf.flatten())
+
+    return x_cart, y_cart, z_cart
