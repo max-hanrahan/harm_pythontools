@@ -281,7 +281,7 @@ def printusage():
     print(("memoryusage=%g" % (memoryusage))) ; sys.stdout.flush()
     #
 
-###Setting common zero color in pcolor - From Joe Kington's answer here: http://stackoverflow.com/questions/20144529/shifted-colorbar-matplotlib  
+###Setting common zero color in pcolor - From Joe Kington's answer here: http://stackoverflow.com/questions/20144529/shifted-colorbar-matplotlib
 class MidpointNormalize(Normalize):
     def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
         self.midpoint = midpoint
@@ -329,7 +329,7 @@ def sec(x):
     y[np.fabs(np.mod(x,0.5*np.pi))<1E-14]=0.0
     return(y)
 
-#arctan2 is identical to the atan2 function of the underlying C library. 
+#arctan2 is identical to the atan2 function of the underlying C library.
 def atan2(x,y):
     return(np.arctan2(x,y))
 
@@ -352,7 +352,7 @@ def tryint(s):
         return int(s)
     except:
         return s
-    
+
 def alphanum_key(s):
     """ Turn a string into a list of string and number chunks.
         "z23a" -> ["z", 23, "a"]
@@ -382,17 +382,17 @@ def getnearpos(array,value):
 def mdot(a,b):
     """
     Computes a contraction of two tensors/vectors.  Assumes
-    the following structure: tensor[m,n,i,j,k] OR vector[m,i,j,k], 
-    where i,j,k are spatial indices and m,n are variable indices. 
+    the following structure: tensor[m,n,i,j,k] OR vector[m,i,j,k],
+    where i,j,k are spatial indices and m,n are variable indices.
     """
     if a.ndim == 4 and b.ndim == 4:
           c = (a*b).sum(0)
     elif a.ndim == 5 and b.ndim == 4:
-          c = np.empty(amax(a[:,0,:,:,:].shape,b.shape),dtype=b.dtype)      
+          c = np.empty(amax(a[:,0,:,:,:].shape,b.shape),dtype=b.dtype)
           for i in range(a.shape[0]):
                 c[i,:,:,:] = (a[i,:,:,:,:]*b).sum(0)
     elif a.ndim == 4 and b.ndim == 5:
-          c = np.empty(amax(b[0,:,:,:,:].shape,a.shape),dtype=a.dtype)      
+          c = np.empty(amax(b[0,:,:,:,:].shape,a.shape),dtype=a.dtype)
           for i in range(b.shape[1]):
                 c[i,:,:,:] = (a*b[:,i,:,:,:]).sum(0)
     elif a.ndim == 5 and b.ndim == 5:
@@ -1070,7 +1070,7 @@ def grid3d(dumpname,use2d=False,doface=False,usethetarot0=False): #read grid dum
     #
     # get other things
     gridcellverts()
-    # 
+    #
     gc.collect() #try to release unneeded memory
     print( "Done grid3d!" ) ; sys.stdout.flush()
 
@@ -1105,7 +1105,7 @@ def grid3d_load(dumpname=None,use2d=False,doface=False,loadsimple=False): #read 
     _dx1=myfloatalt(float(header[7]))
     _dx2=myfloatalt(float(header[8]))
     _dx3=myfloatalt(float(header[9]))
-    #other information: 
+    #other information:
     #polytropic index
     gam=myfloatalt(float(header[11]))
     #black hole spin
@@ -1127,16 +1127,16 @@ def grid3d_load(dumpname=None,use2d=False,doface=False,loadsimple=False): #read 
     ncols = 126
     if dumpname.endswith(".bin"):
         print(( "Start reading grid as binary with lnz=%d" % (lnz) )) ; sys.stdout.flush()
-        body = np.fromfile(gin,dtype=np.float64,count=ncols*nx*ny*lnz) 
+        body = np.fromfile(gin,dtype=np.float64,count=ncols*nx*ny*lnz)
         gd = body.view().reshape((-1,nx,ny,lnz),order='F')
         gin.close()
         print(( "Done reading grid as binary with lnz=%d" % (lnz) )) ; sys.stdout.flush()
     else:
         print(( "Start reading grid as text with lnz=%d" % (lnz) )) ; sys.stdout.flush()
         gin.close()
-        gd = np.loadtxt( "dumps/" + dumpname, 
-                      dtype=np.float64, 
-                      skiprows=1, 
+        gd = np.loadtxt( "dumps/" + dumpname,
+                      dtype=np.float64,
+                      skiprows=1,
                       unpack = True ).view().reshape((126,nx,ny,lnz), order='F')
         print(( "End reading grid as text with lnz=%d" % (lnz) )) ; sys.stdout.flush()
     gd=myfloat(gd)
@@ -1217,10 +1217,10 @@ def gridcellverts():
 ###################################
 def rfd(fieldlinefilename,**kwargs):
     # MEMMARK: 5+4+1+4+4+4+1+16=39 full 3D vars
-    #read information from "fieldline" file: 
-    #Densities: rho, u, 
-    #Velocity components: u1, u2, u3, 
-    #Cell-centered magnetic field components: B1, B2, B3, 
+    #read information from "fieldline" file:
+    #Densities: rho, u,
+    #Velocity components: u1, u2, u3,
+    #Cell-centered magnetic field components: B1, B2, B3,
     #Face-centered magnetic field components multiplied by metric determinant: gdetB1, gdetB2, gdetB3
     global rho,ug,uu,B,gdetB,Erf,urad,uradu, numcolumns
     #
@@ -1331,7 +1331,7 @@ def rfd(fieldlinefilename,**kwargs):
             #
             uu[:]=urel[:]-(gamma/alpha)*beta[:] # spatial part
             uu[0]=gamma/alpha
-            
+
     #
     #B = np.zeros_like(uu)
     #cell-centered magnetic field components
@@ -1497,7 +1497,7 @@ def rfdheader(fin=None):
     _dx3=myfloatalt(float(header[9]))
     #
     nstep=int(header[10])
-    #other information: 
+    #other information:
     #polytropic index
     gam=myfloatalt(float(header[11]))
     #black hole spin
@@ -1616,7 +1616,7 @@ def rfdheaderonly(filename="dumps/fieldline0000.bin"):
     fin = open(filename, "rb" )
     rfdheader(fin=fin)
     fin.close()
-    
+
 def rfdheaderlastfile():
     flist = glob.glob( os.path.join("dumps/", "fieldline*.bin") )
     sort_nicely(flist)
@@ -1642,7 +1642,7 @@ def rfdprocess(gotgdetB=0):
     #
     #if the input file contains additional data
     #
-    if(gotgdetB==0): 
+    if(gotgdetB==0):
         print("No data on gdetB, approximating it.") ; sys.stdout.flush()
         gdetB = np.zeros((4,nx,ny,nz),dtype='float32',order='F')
         print("shapes:") ; sys.stdout.flush()
@@ -1674,7 +1674,7 @@ def rfdprocess(gotgdetB=0):
     #
     #     if 'gdet' in globals():
     #         #first set everything approximately (B's are at shifted locations by half-cell)
-    #         B = gdetB/gdet  
+    #         B = gdetB/gdet
     #         #then, average the inner cells to proper locations
     #         B[1,0:nx-1,:,:] = 0.5*(gdetB[1,0:nx-1,:,:]+gdetB[1,1:nx,:,:])/gdet[0:nx-1,:,:]
     #         B[2,:,0:ny-1,:] = 0.5*(gdetB[2,:,0:ny-1,:]+gdetB[2,:,1:ny,:])/gdet[:,0:ny-1,:]
@@ -2195,7 +2195,7 @@ def cvel():
     aphi = fieldcalc()
     #
     uradd = mdot(gv3,uradu)                  #g_mn urad^n
-    # 
+    #
     # get tau's
     taurad1integrated,taurad1flipintegrated,taurad2integrated,taurad2flipintegrated,tauradintegrated,tauradeff1integrated,tauradeff1flipintegrated,tauradeff2integrated,tauradeff2flipintegrated,tauradeffintegrated=compute_taurad()
 
@@ -2227,7 +2227,7 @@ def getrhouclean(rho,ug,uu):
     rinterp[rinterp<0.0]=0.0
     #
     condmaxbsqorhorhs=rinterp*maxbsqorhonear + (1.0-rinterp)*maxbsqorhofar
-    condmaxbsqorho=(bsq/rho < condmaxbsqorhorhs) # used as spatial conditional to replace single value of maxbsqorho 
+    condmaxbsqorho=(bsq/rho < condmaxbsqorhorhs) # used as spatial conditional to replace single value of maxbsqorho
     #
     print(("t=%g" % (t)))
     print("r")
@@ -2494,14 +2494,14 @@ def fieldcalcU(gdetB1=None):
     aphi=fieldcalcU2D(gdetB1=gdetB1)
     return(aphi)
 
-# pure 2D version   
+# pure 2D version
 def fieldcalcU2D(gdetB1=None):
     """
     Computes cell-centered vector potential
     """
     aphi=fieldcalcface(gdetB1)
     #center it properly in theta
-    aphi[:,0:ny-1]=0.5*(aphi[:,0:ny-1]+aphi[:,1:ny]) 
+    aphi[:,0:ny-1]=0.5*(aphi[:,0:ny-1]+aphi[:,1:ny])
     #special treatment for last cell since no cell at j = ny, and we know aphi[:,ny] should vanish
     aphi[:,ny-1] *= 0.5
     #and in r
@@ -2626,7 +2626,7 @@ def compute_taurad(domergeangles=True,radiussettau1zero=80):
         ########################### tauradeff3
         tauradeff3=uu[0]*np.sqrt(KAPPAUSER*(KAPPAUSER+KAPPAESUSER))*dphco
         #
-        # so tauradintegrated (final version) is optical depth integrated from large radii and away from pole. 
+        # so tauradintegrated (final version) is optical depth integrated from large radii and away from pole.
         tauradintegrated=np.maximum(taurad1flipintegrated,taurad2integrated)
         tauradeffintegrated=np.maximum(tauradeff1flipintegrated,tauradeff2integrated)
         #
@@ -2651,7 +2651,7 @@ def get2davg(usedefault=0,whichgroup=-1,whichgroups=-1,whichgroupe=-1,itemspergr
         whichgroupe = whichgroups + 1
     #check values for sanity
     if usedefault == 0 and (whichgroups < 0 or whichgroupe < 0 or whichgroups >= whichgroupe or itemspergroup <= 0):
-        print(( "get2davg: whichgroups = %d, whichgroupe = %d, itemspergroup = %d not allowed" 
+        print(( "get2davg: whichgroups = %d, whichgroupe = %d, itemspergroup = %d not allowed"
                % (whichgroups, whichgroupe, itemspergroup) ));sys.stdout.flush()
         sys.stdout.flush()
         return None
@@ -3089,7 +3089,7 @@ def get2davgone(whichgroup=-1,itemspergroup=20):
         # faraday
         avg_absfdd+=(np.fabs(fdd)).sum(-1)[:,:,:,:,None]*localdt[itert] # take absolute value since oscillate around 0 near equator and would cancel out and give noise in fdd/fdd type calculations, such as for omegaf
         #
-        # 
+        #
         uuud=odot(uu,ud).sum(-1)[:,:,:,:,None]*localdt[itert]
         #
         # 16*5=80
@@ -3311,7 +3311,7 @@ def faraday():
     # GODMARK: These assume rotation about z-axis
     omegaf2b=np.fabs(v3nonhat) + np.sign(uu[1])*(vpol/Bpol)*np.fabs(B3nonhat)
     #
-    # below omega for the field 
+    # below omega for the field
     omegaf1b=v3nonhat - B3nonhat*(v1hat*B1hat+v2hat*B2hat)/(B1hat**2+B2hat**2)
 
 def checkiffullavgexists():
@@ -3675,7 +3675,7 @@ def velinterp(fnumber, rng, extent, ncell):
     vRhor=vhnorm*np.cos(h)
     vxhor=vRhor*np.cos(ph)-vpnorm*np.sin(ph)
     vyhor=vRhor*np.sin(ph)+vpnorm*np.cos(ph)
-    #make uniform grid for velocity                                            
+    #make uniform grid for velocity
     ivx=reinterpxy(vxnorm,extent,ncell,domask=1,interporder='linear')
     ivx_h=reinterpxyhor(vxhor,extent,ncell,domask=1,interporder='linear')
     ivx[ivx.mask==True]=ivx_h[ivx.mask==True]
@@ -3736,7 +3736,7 @@ def load_good_array():
     zgrid = np.concatenate([zgrid[0][:,0], zgrid[1][:,1]])
 
     # this yt-command does not work yet:
-    coords,conn = yt.hexahedral_connectivity(xgrid,ygrid,zgrid) # the syntax here should transform each 
+    coords,conn = yt.hexahedral_connectivity(xgrid,ygrid,zgrid) # the syntax here should transform each
 
     # attempt to load it:
     bbox = np.array([[np.min(xgrid),np.max(xgrid)],
@@ -3779,11 +3779,11 @@ def grid3d_rhph(dumpname,use2d=False,doface=False,usethetarot0=False): #read gri
     #
     # load axisymmetric metric-grid data
     # this sets THETAROT=0 if THETAROT true is non-zero.  rfd() is responsible for setting THETAROT for each fieldline file so data inputted is transformed/interpolated correctly.
-    grid3d_load_rhph(dumpname=realdumpname,doface=doface,loadsimple=False)
+    grid3d_load(dumpname=realdumpname,doface=doface,loadsimple=False)
     #
     # get other things
-    gridcellverts()
-    # 
+    gridcellverts_rhph()
+    #
     gc.collect() #try to release unneeded memory
     print( "Done grid3d!" ) ; sys.stdout.flush()
 
@@ -3815,7 +3815,7 @@ def grid3d_load_rhph(dumpname=None,use2d=False,doface=False,loadsimple=False): #
     #
     ncols = 126
     print(( "Start reading grid as binary with lnz=%d" % (lnz) )) ; sys.stdout.flush()
-    body = np.fromfile(gin,dtype=np.float64,count=ncols*nx*ny*lnz) 
+    body = np.fromfile(gin,dtype=np.float64,count=ncols*nx*ny*lnz)
     gd = body.view().reshape((-1,nx,ny,lnz),order='F')
     gin.close()
     print(( "Done reading grid as binary with lnz=%d" % (lnz) )) ; sys.stdout.flush()
@@ -3880,15 +3880,25 @@ def load_simplified_array():
     # this function's goal is to load the data using yt. Doesn't work yet.
     make_simplified_array() # call that to get rf hf and phf
 
-    # hexahedral_connectivity currently causes memory problems: 
+    # hexahedral_connectivity currently causes memory problems:
     # the error is: "array is too big; `arr.size * arr.dtype.itemsize` is larger than the maximum possible size."
-    coords, conn = yt.hexahedral_connectivity(rf.flatten(), hf.flatten(), phf.flatten())
+    unique_r = rf[:,0,0]
+    unique_h = hf[0,:,0]
+    unique_ph = phf[0,0,:]
+    # the other thing: truncate r at r = 50
 
-    ds = yt.load_unstructured_mesh(dict(stacked_array), bbox = [[0.0, 10000.0], [0.0, np.pi], [0.0, 2*np.pi]], geometry = 'spherical')
-    s = ds.slice(2, np.pi/2)
-    s.save()
+    xf=int(iofr(50))
+
+    coords, conn = yt.hexahedral_connectivity(unique_r, unique_h, unique_ph)
+
+    return coords, conn
+
+    # ds = yt.load_hexahedral_mesh(dict(rho), bbox = [[0.0, 10000.0], [0.0, np.pi], [0.0, 2*np.pi]], geometry = 'spherical')
+    # s = ds.slice(2, np.pi/2)
+    # s.save()
 
 def convert_simplified_array():
     # this will evenutally convert the array of vertices to xyz coords
     # i am waiting to do it until load_simplified_array() is done
+    # use this to convert make_simp to cartes (which we can't use hex_conn for)
     pass
