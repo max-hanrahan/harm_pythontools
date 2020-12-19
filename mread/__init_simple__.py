@@ -3685,8 +3685,8 @@ def velinterp(fnumber, rng, extent, ncell):
 
     return ivx, ivy
 
-
-def make_good_array():
+def construct_cartesian():
+    # takes the raw data from rf, hf, and phf to make an array in cartesian coords
     # first we call the functions to get rh, hf, and phf
     grid3d("gdump.bin",use2d = False)
     gridcellverts()
@@ -3699,7 +3699,7 @@ def make_good_array():
     y_cart=rf* np.sin(hf)*np.sin(phf)
     z_cart=rf*np.cos(hf)
 
-    print(x_cart.size)
+    print(x_cart.shape)
 
     return x_cart, y_cart, z_cart
 
@@ -3708,9 +3708,10 @@ def test_random_points():
     # CAVEAT: this site treats theta as the angle in the xy-plane and phi as the azimuthal
 
     # I tested five or so points like so, it looks like it works!
-    grid3d("gdump.bin",use2d = True)
+    # TO DO (Max): FIGURE OUT WHY IT'S BROKEN
+    grid3d("gdump.bin",use2d = False)
     gridcellverts()
-    x_cart, y_cart, z_cart = make_good_array()
+    x_cart, y_cart, z_cart = construct_cartesian()
     digit = rnd.randint(0, 96)
     print("Digit chosen: " + str(digit))
     print("in spherical:")
@@ -3720,31 +3721,34 @@ def test_random_points():
     print(x_cart[0][digit], y_cart[0][digit], z_cart[0][digit])
 
 # initializing this in a global scope, right here, ensures that rfd() returns no errors
-use2dglobal = True
-def load_good_array():
-    # what the rest of today is for
+use2dglobal = False
+def load_array_cartesian():
+    # this was an attempt to convert the data to cartesian and then load it
+    # it doesn't work, but the similar function load_simplified_array() does work
     import yt
 
     grid3d('gdump.bin', use2d=True) # loads the data
     rfd('fieldline12300.bin') # I call this to initialize rho
 
     # the hexahedral mesh
-    xgrid, ygrid, zgrid = make_good_array()
+    xgrid, ygrid, zgrid = construct_cartesian()
 
     # unpack each to be a 1d array, with no missing values
     xgrid = np.concatenate([xgrid[0][:,0], xgrid[1][:,1]])
     ygrid = np.concatenate([ygrid[0][:,0], ygrid[1][:,1]])
     zgrid = np.concatenate([zgrid[0][:,0], zgrid[1][:,1]])
 
-    # this yt-command does not work yet:
-    coords,conn = yt.hexahedral_connectivity(xgrid,ygrid,zgrid) # the syntax here should transform each
+    coords, conn = yt.hexahedral_connectivity(xgrid,ygrid,zgrid) # the syntax here should transform each
 
     # attempt to load it:
     bbox = np.array([[np.min(xgrid),np.max(xgrid)],
                     [np.min(ygrid),np.max(ygrid)],
                     [np.min(zgrid),np.max(zgrid)]])
     data = {"density" : rho}
-    ds = yt.load_hexahedral_mesh(data,conn,coords,1.0,bbox=bbox)
+
+    # this doesn't work and I'm not sure why
+    ds = yt.load_hexahedral_mesh(data, conn, coords,bbox=bbox, geometry = 'cartesian')
+    return(ds)
 
 def grid3d_rhph(dumpname,use2d=False,doface=False,usethetarot0=False): #read grid dump file: header and body
     # THIS IS A COPY of grid3d that only deals with r, h, and ph (Max 12/17)
@@ -3768,11 +3772,13 @@ def grid3d_rhph(dumpname,use2d=False,doface=False,usethetarot0=False): #read gri
     # for rfd() to use to see if different nz size
     global nzgdumptrue
     nzgdumptrue=nz
-    #
-    global nxgdump,nygdump,nzgdump
+    
+    # keeping only the global vars we need for calculations
+    global nxgdump,nygdump,nzgdump,THETAROTgdump
     nxgdump=nx
     nygdump=ny
     nzgdump=nz
+    THETAROTgdump=THETAROT
 
     realdumpname=dumpname
     #
@@ -3789,6 +3795,7 @@ def grid3d_rhph(dumpname,use2d=False,doface=False,usethetarot0=False): #read gri
     print( "Done grid3d!" ) ; sys.stdout.flush()
 
 def grid3d_load_rhph(dumpname=None,use2d=False,doface=False,loadsimple=False): #read grid dump file: header and body
+    # similar to grid3d_rhph, THIS IS A COPY of grid3d_load() but ONLY HELPS IN CALCULATING r, theta, and phi
     #The internal cell indices along the three axes: (ti, tj, tk)
     #The internal uniform coordinates, (x1, x2, x3), are mapped into the physical
     #non-uniform coordinates, (r, h, ph), which correspond to radius (r), polar angle (theta), and toroidal angle (phi).
@@ -3832,6 +3839,7 @@ def grid3d_load_rhph(dumpname=None,use2d=False,doface=False,loadsimple=False): #
     dxdxp = gd[110:126].view().reshape((4,4,nx,ny,lnz), order='F').transpose(1,0,2,3,4)
 
 def gridcellverts_rhph():
+    # like the two functions above, it is a copy of gridcellverts() without tif,tjf,and tkf
     ##################################
     #CELL VERTICES:
     global rf,hf,phf
@@ -3871,18 +3879,8 @@ def gridcellverts_rhph():
 def make_simplified_array():
     # should create the r h and ph array as a list of vertices
     grid3d_rhph('gdump.bin', use2d=False) # loads the data
+    rfd('fieldline0000.bin') # I call this to initialize rho
     gridcellverts_rhph() # converts to corners
-
-    stacked_array = np.column_stack((rf.flatten(), hf.flatten(), phf.flatten()))
-    return stacked_array, stacked_array.shape, np.unique(stacked_array, axis = 0), np.unique(stacked_array, axis = 0).shape
-
-def load_simplified_array():
-    import yt
-    grid3d('gdump.bin', use2d=False) # loads the data
-    rfd('fieldline12300.bin') # I call this to initialize rho
-
-    # this function's goal is to load the data using yt. Doesn't work yet.
-    gridcellverts_rhph() # call that to get rf hf and phf
 
     # splits the 3d arrays into their unique columns
     unique_r = rf[:,0,0]
@@ -3890,16 +3888,20 @@ def load_simplified_array():
     unique_ph = phf[0,0,:]
 
     # the other thing: truncate r at r = 50 if it's too big
-    xf=int(iofr(50))
+    xf=int(iofr(50)) # the index at which we should truncate if necessary
+    return unique_r, unique_h, unique_ph
 
-    coords, conn = yt.hexahedral_connectivity(unique_r, unique_h, unique_ph)
+def load_simplified_array(unique_r, unique_h, unique_ph):
+    # takes the global rh, hf, phf variables and uses that to load to yt
+    import yt
+
     #return coords, conn
-    print(coords.shape, conn.shape)
-    data = {"density" : rho}
-    ds = yt.load_hexahedral_mesh(data, conn, coords, bbox = np.array([[0.0, 10000.0], [0.0, np.pi], [0.0, 2*np.pi]]), geometry = 'spherical')
-    #print(ds)
-    s = ds.print_key_parameters()
-    print(s)
+    coords, conn = yt.hexahedral_connectivity(unique_r, unique_h, unique_ph)
+    data = {"density" : rho} # make a dict of the densities
+    ds = yt.load_hexahedral_mesh(data, conn, coords, 
+        bbox = np.array([[0.0, 10000.0], [0.0, np.pi], [0.0, 2*np.pi]]), 
+        geometry = 'spherical')
+    return ds
 
 def convert_simplified_array():
     # convert the array of vertices to xyz coords
@@ -3915,3 +3917,10 @@ def convert_simplified_array():
     z_cart=rf.flatten()*np.cos(hf.flatten())
 
     return x_cart, y_cart, z_cart
+''' AS OF FRIDAY NIGHT (12/18): I looked at the previous nine functions and here's what seems to be true:
+    THE FIRST THREE:
+        first function looks okay, the next two are broken but not that useful
+    THE NEXT THREE:
+        Helper functions, fine
+    LAST THREE:
+        are working! But I'm not sure if the last one does its docstring task.
