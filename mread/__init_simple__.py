@@ -3876,10 +3876,10 @@ def gridcellverts_rhph():
     #extend in theta
     phf[:,ny,:]   =   phf[:,ny-1,:]
 
-def make_simplified_array():
+def make_simplified_array(fieldname):
     # should create the r h and ph array as an array of vertices
     grid3d_rhph('gdump.bin', use2d=False) # loads the data
-    rfd('fieldline0000.bin') # I call this to initialize rho
+    rfd(fieldname) # I call this to initialize rho
     gridcellverts_rhph() # converts to corners
 
     # splits the 3d arrays into their unique columns
@@ -3902,9 +3902,9 @@ def load_simplified_array(unique_r, unique_h, unique_ph):
         bbox = np.array([[0.0, 10000.0], [0.0, np.pi], [0.0, 2*np.pi]]), 
         geometry = 'spherical')
 
-    slc = yt.SlicePlot(ds, "phi", "density")
-    slc.set_cmap("density", "Rainbow")
-    slc.save('rainbow_phi')
+    slc = yt.SlicePlot(ds, "theta", "density")
+    slc.set_cmap("density", "Blue-Red")
+    slc.save()
     return ds
 
 def convert_simplified_array():
