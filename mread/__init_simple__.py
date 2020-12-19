@@ -3877,7 +3877,7 @@ def gridcellverts_rhph():
     phf[:,ny,:]   =   phf[:,ny-1,:]
 
 def make_simplified_array():
-    # should create the r h and ph array as a list of vertices
+    # should create the r h and ph array as an array of vertices
     grid3d_rhph('gdump.bin', use2d=False) # loads the data
     rfd('fieldline0000.bin') # I call this to initialize rho
     gridcellverts_rhph() # converts to corners
@@ -3901,6 +3901,10 @@ def load_simplified_array(unique_r, unique_h, unique_ph):
     ds = yt.load_hexahedral_mesh(data, conn, coords, 
         bbox = np.array([[0.0, 10000.0], [0.0, np.pi], [0.0, 2*np.pi]]), 
         geometry = 'spherical')
+
+    slc = yt.SlicePlot(ds, "phi", "density")
+    slc.set_cmap("density", "Rainbow")
+    slc.save('rainbow_phi')
     return ds
 
 def convert_simplified_array():
@@ -3917,7 +3921,7 @@ def convert_simplified_array():
     z_cart=rf.flatten()*np.cos(hf.flatten())
 
     return x_cart, y_cart, z_cart
-'''
+''' 
 AS OF FRIDAY NIGHT (12/18): I looked at the previous nine functions and here's what seems to be true:
     THE FIRST THREE:
         first function looks okay, the next two are broken but not that useful
@@ -3925,4 +3929,11 @@ AS OF FRIDAY NIGHT (12/18): I looked at the previous nine functions and here's w
         Helper functions, fine
     LAST THREE:
         are working! But I'm not sure if the last one does its docstring task.
+        
+Also, I found a list of color pallets: https://yt-project.org/doc/visualizing/colormaps/index.html
+I think the Rainbow does what Megan needs.
+
+As for controling the radius, it looks like slc.zoom(zoomfactor) can help.
+example of zoom function: https://yt-project.org/doc/visualizing/plots.html
+more potentially helpful methods: https://yt-project.org/doc/cookbook/complex_plots.html
 '''
