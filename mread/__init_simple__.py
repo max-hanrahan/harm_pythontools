@@ -3917,10 +3917,12 @@ def convert_simplified_array():
     z_cart=rf.flatten()*np.cos(hf.flatten())
 
     return x_cart, y_cart, z_cart
-''' AS OF FRIDAY NIGHT (12/18): I looked at the previous nine functions and here's what seems to be true:
+'''
+AS OF FRIDAY NIGHT (12/18): I looked at the previous nine functions and here's what seems to be true:
     THE FIRST THREE:
         first function looks okay, the next two are broken but not that useful
     THE NEXT THREE:
         Helper functions, fine
     LAST THREE:
         are working! But I'm not sure if the last one does its docstring task.
+'''
