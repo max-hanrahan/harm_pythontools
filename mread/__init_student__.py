@@ -3843,7 +3843,7 @@ def get_RT_seedpoints(fnumber, ncell):
     pg=(gam-1.0)*ug
     myfun=0.5*bsq/pg #ibeta
     mdot=gdet*uu[1]*_dx2*_dx3*rho
-    mdot_int=np.sum(np.abs(mdot[ihor,:,:]))
+    mdot_int=np.sum(np.abs(mdot[int(ihor),:,:])) # changed float to int (Max 12/21/20)
 
     Br = dxdxp[1,1]*B[1]+dxdxp[1,2]*B[2]
     Bh = dxdxp[2,1]*B[1]+dxdxp[2,2]*B[2]
@@ -3863,7 +3863,8 @@ def get_RT_seedpoints(fnumber, ncell):
     imyz[imyz.mask==True]=np.sqrt(rhor**2-imyx[imyz.mask==True]**2-imyy[imyz.mask==True]**2)
 
     ivx0,ivy0=velinterp(fnumber, rng, extent,ncell)
-    ivx1,ivy1=velinterp(fnumber+1,rng,extent,ncell)    
+    # commented this because I don't have consecutive fieldline files: (Max 12/21/20)
+    # ivx1,ivy1=velinterp(fnumber+1,rng,extent,ncell)    
 
     #irho=reinterpxy(rho,extent,ncell,domask=1,interporder='linear')
     #irho_h=reinterpxyhor(rho,extent,ncell,domask=1,interporder='linear')
@@ -4007,9 +4008,10 @@ def get_RT_seedpoints(fnumber, ncell):
             iofx=getnearpos(grid,newsamp[n,0])
             jofy=getnearpos(grid,newsamp[n,1])
             prob_array[n]=Bp_slice[jofy,iofx]
-        coords=open("snapshot/coords"+str(fnumber)+"_wv_hc.npz","w")
-        np.savez(coords,cs=coords_sampled, prob=prob_array, hc=horcirc)
-        coords.close()
+        # commented because I didn't have the files (Max 12/21/20)
+        # coords=open("snapshot/coords"+str(fnumber)+"_wv_hc.npz","w")
+        # np.savez(coords,cs=coords_sampled, prob=prob_array, hc=horcirc)
+        # coords.close()
     
     #Make plots to use as movie frames
     plt.clf()
@@ -4025,9 +4027,10 @@ def get_RT_seedpoints(fnumber, ncell):
     plt.ylim(-rng,rng)
     plt.title('Seedpoint propagation '+str(fnumber).zfill(4))
     #plt.show()
-    plt.savefig('snapshot/frames/seedprop'+str(fnumber).zfill(4)+'.png')
+    # plt.savefig('snapshot/frames/seedprop'+str(fnumber).zfill(4)+'.png')
     
-    #return msk1
+    # max made it return this (12/21/20)
+    return Brnorm, Bhnorm, Bpnorm
 
 #This might not work on windows, since it has the os.path stuff?
 def checkifseedpointexists(fnumber):
@@ -4674,7 +4677,7 @@ def tutorial1alt():
     # first load grid file
     grid3d("gdump.bin",use2d=True)
     # now try loading a single fieldline file
-    rfd("fieldline0000.bin")
+    rfd("fieldline14926.bin")
     # now plot something you read-in
     plt.clf()
     plt.figure(1)
@@ -4758,3 +4761,50 @@ def tutorial1alt():
     plt.savefig('f13682_lrho_jofph42.png')
     #
     #return lrho
+use2dglobal = False
+def make_simplified_array(fieldname):
+    # should create the r h and ph array as an array of vertices
+    grid3d('gdump.bin', use2d=False) # loads the data
+    rfd(fieldname) # I call this to initialize rho
+    gridcellverts() # converts to corners
+
+    # splits the 3d arrays into their unique columns
+    unique_r = rf[:,0,0]
+    unique_h = hf[0,:,0]
+    unique_ph = phf[0,0,:]
+
+    # the other thing: truncate r at r = 50 if it's too big
+    xf=int(iofr(50)) # the index at which we should truncate if necessary
+    return unique_r, unique_h, unique_ph
+
+def load_simplified_array(unique_r, unique_h, unique_ph, Brnorm, Bhnorm, Bpnorm):
+    # takes the outputs of both make_simp_array and the new output of get_rt_seedpoints
+    import yt
+
+    #return coords, conn
+    coords, conn = yt.hexahedral_connectivity(unique_r, unique_h, unique_ph)
+    data = {"density" : rho, "br": Brnorm, "bh": Bhnorm, "bp": Bpnorm} # make a dict of the densities and b-field components
+    ds = yt.load_hexahedral_mesh(data, conn, coords, 
+        bbox = np.array([[0.0, 10000.0], [0.0, np.pi], [0.0, 2*np.pi]]), 
+        geometry = 'spherical')
+    return ds
+# ATTEMPT TO LOAD THE FIELDLINES:
+def load_fieldlines(ds):
+    c = ds.domain_center # center of the sphere
+    N = 100 # number of field lines
+    scale = ds.domain_width[0]# scale of lines relative to boxsize
+    pos_dx = np.random.random((N, 3))*scale-scale/2 # position relative to center (randomly deifined)
+    pos = c+pos_dx # absolute location of fieldline pos
+    from yt.visualization.api import Streamlines
+
+
+    # create streamline of 3d vector velocity and integrate through boundary defined above
+    streamlines = Streamlines(ds, pos, 'br', 'bh', 'bp', get_magnitude = True)
+    streamlines.integrate_through_volume()
+
+    for stream in streamlines.streamlines:
+        stream = stream[np.all(stream != 0.0, axis=1)]
+        ax.plot3D(stream[:,0], stream[:,1], stream[:,2], alpha=0.1)
+
+    # Save the plot to disk.
+    plt.savefig('streamlines.png')
