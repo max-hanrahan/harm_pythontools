@@ -3707,8 +3707,8 @@ def test_random_points():
     # compared inputs and outputs to this calculator: https://keisan.casio.com/exec/system/1359534351
     # CAVEAT: this site treats theta as the angle in the xy-plane and phi as the azimuthal
 
-    # I tested five or so points like so, it looks like it works!
-    # TO DO (Max): FIGURE OUT WHY IT'S BROKEN
+    # I tested five or so points like so, it looks like it works! But it doesn't seem to work anymore?
+    # TO DO (Max): FIGURE OUT HOW IT BROKE
     grid3d("gdump.bin",use2d = False)
     gridcellverts()
     x_cart, y_cart, z_cart = construct_cartesian()
@@ -3722,33 +3722,19 @@ def test_random_points():
 
 # initializing this in a global scope, right here, ensures that rfd() returns no errors
 use2dglobal = False
-def load_array_cartesian():
-    # this was an attempt to convert the data to cartesian and then load it
-    # it doesn't work, but the similar function load_simplified_array() does work
+
+def load_array_as_cartesian(x_array, y_array, z_array):
+    # Takes x, y, z and (attempts) to load it into a yt framework
+    # It hasn't worked yet
     import yt
 
-    grid3d('gdump.bin', use2d=True) # loads the data
-    rfd('fieldline12300.bin') # I call this to initialize rho
-
-    # the hexahedral mesh
-    xgrid, ygrid, zgrid = construct_cartesian()
-
-    # unpack each to be a 1d array, with no missing values
-    xgrid = np.concatenate([xgrid[0][:,0], xgrid[1][:,1]])
-    ygrid = np.concatenate([ygrid[0][:,0], ygrid[1][:,1]])
-    zgrid = np.concatenate([zgrid[0][:,0], zgrid[1][:,1]])
-
-    coords, conn = yt.hexahedral_connectivity(xgrid,ygrid,zgrid) # the syntax here should transform each
-
-    # attempt to load it:
-    bbox = np.array([[np.min(xgrid),np.max(xgrid)],
-                    [np.min(ygrid),np.max(ygrid)],
-                    [np.min(zgrid),np.max(zgrid)]])
-    data = {"density" : rho}
-
-    # this doesn't work and I'm not sure why
-    ds = yt.load_hexahedral_mesh(data, conn, coords,bbox=bbox, geometry = 'cartesian')
-    return(ds)
+    #return coords, conn
+    coords, conn = yt.hexahedral_connectivity(x_array[0][0], y_array[0][0], z_array[0][0]) # This is what I likely messed up
+    data = {"density" : rho} # make a dict of the densities (todo: add b-field components once this function works)
+    ds = yt.load_hexahedral_mesh(data, conn, coords, 
+        bbox = np.array([[-10000.0, 10000.0], [-10000.0, 10000.0], [-10000.0, 10000.0]]), 
+        geometry = 'cartesian')
+    return ds
 
 def grid3d_rhph(dumpname,use2d=False,doface=False,usethetarot0=False): #read grid dump file: header and body
     # THIS IS A COPY of grid3d that only deals with r, h, and ph (Max 12/17)
@@ -3904,6 +3890,7 @@ def load_simplified_array(unique_r, unique_h, unique_ph):
 
     slc = yt.SlicePlot(ds, "theta", "density")
     slc.set_cmap("density", "Blue-Red")
+    slc.zoom(30)
     slc.save()
     return ds
 
@@ -3922,7 +3909,7 @@ def convert_simplified_array():
 
     return x_cart, y_cart, z_cart
 ''' 
-AS OF FRIDAY NIGHT (12/18): I looked at the previous nine functions and here's what seems to be true:
+AS OF MONDAT NIGHT (12/21): I (Max) looked at the previous nine functions and here's what seems to be true:
     THE FIRST THREE:
         first function looks okay, the next two are broken but not that useful
     THE NEXT THREE:
@@ -3931,9 +3918,30 @@ AS OF FRIDAY NIGHT (12/18): I looked at the previous nine functions and here's w
         are working! But I'm not sure if the last one does its docstring task.
         
 Also, I found a list of color pallets: https://yt-project.org/doc/visualizing/colormaps/index.html
-I think the Rainbow does what Megan needs.
+Jet is the matplotlib-style one, let's stick with that.
 
 As for controling the radius, it looks like slc.zoom(zoomfactor) can help.
 example of zoom function: https://yt-project.org/doc/visualizing/plots.html
 more potentially helpful methods: https://yt-project.org/doc/cookbook/complex_plots.html
 '''
+
+# ATTEMPT TO LOAD THE FIELDLINES:
+def load_fieldlines(ds):
+    # takes the dataset loaded from yt, as in ds = yt.load_hexahedral_mesh(args)
+    c = ds.domain_center # center of the sphere
+    N = 100 # number of field lines
+    scale = ds.domain_width[0]# scale of lines relative to boxsize
+    pos_dx = np.random.random((N, 3))*scale-scale/2 # position relative to center (randomly deifined)
+    pos = c+pos_dx # absolute location of fieldline pos
+    from yt.visualization.api import Streamlines
+
+    # create streamline of 3d vector velocity and integrate through boundary defined above
+    streamlines = Streamlines(ds, pos, 'br', 'bh', 'bp', get_magnitude = True)
+    streamlines.integrate_through_volume()
+
+    for stream in streamlines.streamlines:
+        stream = stream[np.all(stream != 0.0, axis=1)]
+        ax.plot3D(stream[:,0], stream[:,1], stream[:,2], alpha=0.1)
+
+    # Save the plot to disk.
+    plt.savefig('streamlines.png')
