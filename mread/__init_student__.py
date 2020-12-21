@@ -3863,8 +3863,7 @@ def get_RT_seedpoints(fnumber, ncell):
     imyz[imyz.mask==True]=np.sqrt(rhor**2-imyx[imyz.mask==True]**2-imyy[imyz.mask==True]**2)
 
     ivx0,ivy0=velinterp(fnumber, rng, extent,ncell)
-    # commented this because I don't have consecutive fieldline files: (Max 12/21/20)
-    # ivx1,ivy1=velinterp(fnumber+1,rng,extent,ncell)    
+    ivx1,ivy1=velinterp(fnumber+1,rng,extent,ncell)    
 
     #irho=reinterpxy(rho,extent,ncell,domask=1,interporder='linear')
     #irho_h=reinterpxyhor(rho,extent,ncell,domask=1,interporder='linear')
@@ -4008,10 +4007,9 @@ def get_RT_seedpoints(fnumber, ncell):
             iofx=getnearpos(grid,newsamp[n,0])
             jofy=getnearpos(grid,newsamp[n,1])
             prob_array[n]=Bp_slice[jofy,iofx]
-        # commented because I didn't have the files (Max 12/21/20)
-        # coords=open("snapshot/coords"+str(fnumber)+"_wv_hc.npz","w")
-        # np.savez(coords,cs=coords_sampled, prob=prob_array, hc=horcirc)
-        # coords.close()
+        coords=open("snapshot/coords"+str(fnumber)+"_wv_hc.npz","w")
+        np.savez(coords,cs=coords_sampled, prob=prob_array, hc=horcirc)
+        coords.close()
     
     #Make plots to use as movie frames
     plt.clf()
