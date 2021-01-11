@@ -3621,6 +3621,40 @@ def reinterpxy(vartointerp,extent,ncell,domask=1,interporder='cubic'):
         varinterpolated = zi
     return(varinterpolated)
 
+def reinterpxyz(vartointerp, extent, ncell,domask=1,interporder='cubic'):
+    # Max's attempt at 3d interp 1/11/21
+    global xi, yi, zi, ai
+    xraw = r*np.sin(h)*np.cos(ph)
+    yraw = r*np.sin(h)*np.sin(ph)
+    zraw = r*np.cos(h)
+
+    x=xraw[:,ny//2,:].view().reshape(-1)
+    y=yraw[:,ny//2,:].view().reshape(-1)
+    z=zraw[:,ny//2,:].view().reshape(-1)
+    var=vartointerp[:,:,:].view().reshape(-1)
+
+    # mirror
+    if nz*_dx3*dxdxp[3,3,0,0,0] < 0.99 * 2 * np.pi:
+        x=np.concatenate((-x,x))
+        y=np.concatenate((-y,y))
+        z=np.concatenate((-z, z))
+        var=np.concatenate((var,var))
+
+    # define grid.
+    xi = np.linspace(extent[0], extent[1], ncell)
+    yi = np.linspace(extent[2], extent[3], ncell)
+    zi = np.linspace(extent[4], extenent[5], ncell)
+
+    # grid the data, adjusted FOR 3D
+    ai = griddata((x, y), var, (xi[None,:,:], yi[:,None,:], zi[:,:, None]), method=interporder)
+
+    if domask!=0:
+        interior = np.sqrt((xi[None,:]**2) + (yi[:,None]**2)) < (1+np.sqrt(1-a**2))*domask
+        varinterpolated = ma.masked_where(interior, ai)
+    else:
+        varinterpolated = ai
+    return(varinterpolated)
+
 def reinterpxyhor(vartointerp,extent,ncell,domask=1,interporder='cubic'):
     '''function made to project qtys on the bh horizon down to the midplane - created by Megan 2/29/16'''
     global xi,yi,zi
@@ -3652,6 +3686,40 @@ def reinterpxyhor(vartointerp,extent,ncell,domask=1,interporder='cubic'):
         varinterpolated = zi
     return(varinterpolated)
 
+def velinterp_3d(fnumber, rng, extent, ncell):
+    '''Max's attempt at a function which uses reinterpxyz() instead of reinterpxy()
+    1/11/2021'''
+    grid3d("gdump.bin",use2d=False)
+    #load the fieldline file for a given time and compute standard quantities
+    rfd("fieldline"+str(fnumber)+".bin")
+    cvel()
+    rhor=1+(1-a**2)**0.5
+    ihor=np.floor(iofr(rhor)+0.5)
+    #compute the 3-velocities in the equatorial slice
+    vr = dxdxp[1,1]*uu[1]/uu[0]+dxdxp[1,2]*uu[2]/uu[0]
+    vh = dxdxp[2,1]*uu[1]/uu[0]+dxdxp[2,2]*uu[2]/uu[0]
+    vp = uu[3]/uu[0]*dxdxp[3,3]
+    #
+    vrnorm=vr
+    vhnorm=vh*np.abs(r)
+    vpnorm=vp*np.abs(r*np.sin(h))
+    #
+    vznorm=vrnorm*np.cos(h)-vhnorm*np.sin(h)
+    vRnorm=vrnorm*np.sin(h)+vhnorm*np.cos(h)
+    vxnorm=vRnorm*np.cos(ph)-vpnorm*np.sin(ph)
+    vynorm=vRnorm*np.sin(ph)+vpnorm*np.cos(ph)
+    vRhor=vhnorm*np.cos(h)
+    vxhor=vRhor*np.cos(ph)-vpnorm*np.sin(ph)
+    vyhor=vRhor*np.sin(ph)+vpnorm*np.cos(ph)
+    #make uniform grid for velocity
+    ivx=reinterpxyz(vxnorm,extent,ncell,domask=1,interporder='linear')
+    ivx_h=reinterpxyhor(vxhor,extent,ncell,domask=1,interporder='linear')
+    ivx[ivx.mask==True]=ivx_h[ivx.mask==True]
+    ivy=reinterpxyz(vynorm,extent,ncell,domask=1,interporder='linear')
+    ivy_h=reinterpxyhor(vyhor,extent,ncell,domask=1,interporder='linear')
+    ivy[ivy.mask==True]=ivy_h[ivy.mask==True]
+
+    return ivx, ivy
 def velinterp(fnumber, rng, extent, ncell):
     grid3d("gdump.bin",use2d=True)
     #load the fieldline file for a given time and compute standard quantities
@@ -3731,8 +3799,8 @@ def load_array_as_cartesian(x_array, y_array, z_array):
     #return coords, conn
     coords, conn = yt.hexahedral_connectivity(x_array[0][0], y_array[0][0], z_array[0][0]) # This is what I likely messed up
     data = {"density" : rho} # make a dict of the densities (todo: add b-field components once this function works)
-    ds = yt.load_hexahedral_mesh(data, conn, coords, 
-        bbox = np.array([[-10000.0, 10000.0], [-10000.0, 10000.0], [-10000.0, 10000.0]]), 
+    ds = yt.load_hexahedral_mesh(data, conn, coords,
+        bbox = np.array([[-10000.0, 10000.0], [-10000.0, 10000.0], [-10000.0, 10000.0]]),
         geometry = 'cartesian')
     return ds
 
@@ -3758,7 +3826,7 @@ def grid3d_rhph(dumpname,use2d=False,doface=False,usethetarot0=False): #read gri
     # for rfd() to use to see if different nz size
     global nzgdumptrue
     nzgdumptrue=nz
-    
+
     # keeping only the global vars we need for calculations
     global nxgdump,nygdump,nzgdump,THETAROTgdump
     nxgdump=nx
@@ -3880,12 +3948,12 @@ def make_simplified_array(fieldname):
 def load_simplified_array(unique_r, unique_h, unique_ph):
     # takes the global rh, hf, phf variables and uses that to load to yt
     import yt
-
+    yt.visualization.plot_modifications.ContourCallback._supported_geometries += ("spherical",)
     #return coords, conn
     coords, conn = yt.hexahedral_connectivity(unique_r, unique_h, unique_ph)
     data = {"density" : rho} # make a dict of the densities
-    ds = yt.load_hexahedral_mesh(data, conn, coords, 
-        bbox = np.array([[0.0, 10000.0], [0.0, np.pi], [0.0, 2*np.pi]]), 
+    ds = yt.load_hexahedral_mesh(data, conn, coords,
+        bbox = np.array([[0.0, 10000.0], [0.0, np.pi], [0.0, 2*np.pi]]),
         geometry = 'spherical')
 
     slc = yt.SlicePlot(ds, "theta", "density")
@@ -3908,15 +3976,15 @@ def convert_simplified_array():
     z_cart=rf.flatten()*np.cos(hf.flatten())
 
     return x_cart, y_cart, z_cart
-''' 
-AS OF MONDAT NIGHT (12/21): I (Max) looked at the previous nine functions and here's what seems to be true:
+'''
+AS OF MONDAY NIGHT (12/21): I (Max) looked at the previous nine functions and here's what seems to be true:
     THE FIRST THREE:
         first function looks okay, the next two are broken but not that useful
     THE NEXT THREE:
         Helper functions, fine
     LAST THREE:
         are working! But I'm not sure if the last one does its docstring task.
-        
+
 Also, I found a list of color pallets: https://yt-project.org/doc/visualizing/colormaps/index.html
 Jet is the matplotlib-style one, let's stick with that.
 
@@ -3945,3 +4013,10 @@ def load_fieldlines(ds):
 
     # Save the plot to disk.
     plt.savefig('streamlines.png')
+
+def reinterp_3d_test():
+    # WIP: see if it runs without errors
+    grid3d_rhph('gdump.bin', use2d=False) # loads the data
+    rfd(fieldname) # I call this to initialize rho
+    gridcellverts_rhph() # converts to corners
+    # reinterpxyz(density, )
