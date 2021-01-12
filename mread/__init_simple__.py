@@ -3628,16 +3628,11 @@ def reinterpxyz(vartointerp, extent, ncell,domask=1,interporder='cubic'):
     yraw = r*np.sin(h)*np.sin(ph)
     zraw = r*np.cos(h)
 
-    x=xraw[:,ny//2,:].view().reshape(-1)
-    y=yraw[:,ny//2,:].view().reshape(-1)
-    z=zraw[:,ny//2,:].view().reshape(-1)
-    var=vartointerp[:,:,:].view().reshape(-1)
-
     # mirror
     if nz*_dx3*dxdxp[3,3,0,0,0] < 0.99 * 2 * np.pi:
-        x=np.concatenate((-x,x))
-        y=np.concatenate((-y,y))
-        z=np.concatenate((-z, z))
+        x=np.concatenate((-xraw,xraw))
+        y=np.concatenate((-yraw,yraw))
+        z=np.concatenate((-zraw, zraw))
         var=np.concatenate((var,var))
 
     # define grid.
