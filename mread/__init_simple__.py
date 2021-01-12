@@ -3604,10 +3604,11 @@ def reinterpxy(vartointerp,extent,ncell,domask=1,interporder='cubic'):
     y=yraw[:,ny//2,:].view().reshape(-1)
     var=vartointerp[:,ny//2,:].view().reshape(-1)
     #mirror
-    if nz*_dx3*dxdxp[3,3,0,0,0] < 0.99 * 2 * np.pi:
-        x=np.concatenate((-x,x))
-        y=np.concatenate((-y,y))
-        var=np.concatenate((var,var))
+    # if nz*_dx3*dxdxp[3,3,0,0,0] < 0.99 * 2 * np.pi:
+    # ^ I don't know what that if statement does but Megan says it looks outdated/unnecessary (Max 1/12)
+    x=np.concatenate((-x,x))
+    y=np.concatenate((-y,y))
+    var=np.concatenate((var,var))
     # define grid.
     xi = np.linspace(extent[0], extent[1], ncell)
     yi = np.linspace(extent[2], extent[3], ncell)
@@ -3629,11 +3630,10 @@ def reinterpxyz(vartointerp, extent, ncell,domask=1,interporder='cubic'):
     zraw = r*np.cos(h)
 
     # mirror
-    if nz*_dx3*dxdxp[3,3,0,0,0] < 0.99 * 2 * np.pi:
-        x=np.concatenate((-xraw,xraw))
-        y=np.concatenate((-yraw,yraw))
-        z=np.concatenate((-zraw, zraw))
-        var=np.concatenate((var,var))
+    x=np.concatenate((-xraw,xraw))
+    y=np.concatenate((-yraw,yraw))
+    z=np.concatenate((-zraw, zraw))
+    var=np.concatenate((var,var))
 
     # define grid.
     xi = np.linspace(extent[0], extent[1], ncell)
