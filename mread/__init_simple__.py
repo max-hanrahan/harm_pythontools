@@ -3643,10 +3643,10 @@ def reinterpxyz(vartointerp, extent, ncell,domask=1,interporder='cubic'):
     # define grid.
     xi = np.linspace(extent[0], extent[1], ncell)
     yi = np.linspace(extent[2], extent[3], ncell)
-    zi = np.linspace(extent[4], extenent[5], ncell)
+    zi = np.linspace(extent[4], extent[5], ncell)
 
     # grid the data, adjusted FOR 3D
-    ai = griddata((x, y), var, (xi[None,:,:], yi[:,None,:], zi[:,:, None]), method=interporder)
+    ai = griddata((x, y, z), var, (xi[None,:,:], yi[:,None,:], zi[:,:, None]), method=interporder)
 
     if domask!=0:
         interior = np.sqrt((xi[None,:]**2) + (yi[:,None]**2)) < (1+np.sqrt(1-a**2))*domask
@@ -3720,6 +3720,7 @@ def velinterp_3d(fnumber, rng, extent, ncell):
     ivy[ivy.mask==True]=ivy_h[ivy.mask==True]
 
     return ivx, ivy
+
 def velinterp(fnumber, rng, extent, ncell):
     grid3d("gdump.bin",use2d=True)
     #load the fieldline file for a given time and compute standard quantities
