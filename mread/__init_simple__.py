@@ -3622,12 +3622,20 @@ def reinterpxy(vartointerp,extent,ncell,domask=1,interporder='cubic'):
         varinterpolated = zi
     return(varinterpolated)
 
-def reinterpxyz(vartointerp, extent, ncell,domask=1,interporder='cubic'):
+def reinterpxyz(vartointerp, extent, ncell,domask=1,interporder='linear'):
     # Max's attempt at 3d interp 1/11/21
+    # As of 1/13/21 I tried using 'linear' instead of 'cubic' for bug-squashing purposes
     global xi, yi, zi, ai
     xraw = r*np.sin(h)*np.cos(ph)
     yraw = r*np.sin(h)*np.sin(ph)
     zraw = r*np.cos(h)
+
+    # Megan advised adding this if statement back in again (1/13/21, Max)
+    if nz*_dx3*dxdxp[3,3,0,0,0] < 0.99 * 2 * np.pi:
+        x=xraw[:,:,:].view().reshape(-1)
+        y=yraw[:,:,:].view().reshape(-1)
+        z=zraw[:,:,:].view().reshape(-1)
+    var=vartointerp[:,:,:].view().reshape(-1) # unindented this so it always gets initialized
 
     # mirror
     x=np.concatenate((-xraw,xraw))
@@ -3641,7 +3649,8 @@ def reinterpxyz(vartointerp, extent, ncell,domask=1,interporder='cubic'):
     zi = np.linspace(extent[4], extent[5], ncell)
 
     # grid the data, adjusted FOR 3D
-    ai = griddata((x, y, z), var, (xi[None,:,:], yi[:,None,:], zi[:,:, None]), method=interporder)
+    points = np.array((x, y, z)).T # the first griddata argument, it looks like, must be in transposed like this
+    ai = griddata(points, var, (xi[None,:,None], yi[:,None,None], zi[None,None,:]), method=interporder)
 
     if domask!=0:
         interior = np.sqrt((xi[None,:]**2) + (yi[:,None]**2)) < (1+np.sqrt(1-a**2))*domask
@@ -3954,8 +3963,6 @@ def load_simplified_array(unique_r, unique_h, unique_ph):
 
     slc = yt.SlicePlot(ds, "theta", "density")
     slc.set_cmap("density", "Blue-Red")
-    slc.zoom(30)
-    slc.save()
     return ds
 
 def convert_simplified_array():
