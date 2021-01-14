@@ -3603,12 +3603,6 @@ def reinterpxy(vartointerp,extent,ncell,domask=1,interporder='cubic'):
     x=xraw[:,ny//2,:].view().reshape(-1)
     y=yraw[:,ny//2,:].view().reshape(-1)
     var=vartointerp[:,ny//2,:].view().reshape(-1)
-    #mirror
-    # if nz*_dx3*dxdxp[3,3,0,0,0] < 0.99 * 2 * np.pi:
-    # ^ I don't know what that if statement does but Megan says it looks outdated/unnecessary (Max 1/12)
-    x=np.concatenate((-x,x))
-    y=np.concatenate((-y,y))
-    var=np.concatenate((var,var))
     # define grid.
     xi = np.linspace(extent[0], extent[1], ncell)
     yi = np.linspace(extent[2], extent[3], ncell)
@@ -3622,7 +3616,7 @@ def reinterpxy(vartointerp,extent,ncell,domask=1,interporder='cubic'):
         varinterpolated = zi
     return(varinterpolated)
 
-def reinterpxyz(vartointerp, extent, ncell,domask=1,interporder='linear'):
+def reinterpxyz(vartointerp, extent, ncell,domask=1,interporder='cubic'):
     # Max's attempt at 3d interp 1/11/21
     # As of 1/13/21 I tried using 'linear' instead of 'cubic' for bug-squashing purposes
     global xi, yi, zi, ai
@@ -3630,18 +3624,10 @@ def reinterpxyz(vartointerp, extent, ncell,domask=1,interporder='linear'):
     yraw = r*np.sin(h)*np.sin(ph)
     zraw = r*np.cos(h)
 
-    # Megan advised adding this if statement back in again (1/13/21, Max)
-    if nz*_dx3*dxdxp[3,3,0,0,0] < 0.99 * 2 * np.pi:
-        x=xraw[:,:,:].view().reshape(-1)
-        y=yraw[:,:,:].view().reshape(-1)
-        z=zraw[:,:,:].view().reshape(-1)
-    var=vartointerp[:,:,:].view().reshape(-1) # unindented this so it always gets initialized
-
-    # mirror
-    x=np.concatenate((-xraw,xraw))
-    y=np.concatenate((-yraw,yraw))
-    z=np.concatenate((-zraw, zraw))
-    var=np.concatenate((var,var))
+    x=xraw[:,:,:].view().reshape(-1)
+    y=yraw[:,:,:].view().reshape(-1)
+    z=zraw[:,:,:].view().reshape(-1)
+    var=vartointerp[:,:,:].view().reshape(-1)
 
     # define grid.
     xi = np.linspace(extent[0], extent[1], ncell)
@@ -3649,11 +3635,12 @@ def reinterpxyz(vartointerp, extent, ncell,domask=1,interporder='linear'):
     zi = np.linspace(extent[4], extent[5], ncell)
 
     # grid the data, adjusted FOR 3D
-    points = np.array((x, y, z)).T # the first griddata argument, it looks like, must be in transposed like this
-    ai = griddata(points, var, (xi[None,:,None], yi[:,None,None], zi[None,None,:]), method=interporder)
+    # points = np.array((x, y, z)).T # the first griddata argument, it looks like, must be in transposed like this
+    print("If you can see this, then at least it got to linspace. -Max 1/14")
+    ai = griddata((x,y,z), var, (xi[None,:,None], yi[:,None,None], zi[None,None,:]), method=interporder)
 
     if domask!=0:
-        interior = np.sqrt((xi[None,:]**2) + (yi[:,None]**2)) < (1+np.sqrt(1-a**2))*domask
+        interior = np.sqrt((xi[None,:, None]**2) + (yi[:,None, None]**2)+ (zi[None,None,:]**2)) < (1+np.sqrt(1-a**2))*domask
         varinterpolated = ma.masked_where(interior, ai)
     else:
         varinterpolated = ai
@@ -3960,9 +3947,6 @@ def load_simplified_array(unique_r, unique_h, unique_ph):
     ds = yt.load_hexahedral_mesh(data, conn, coords,
         bbox = np.array([[0.0, 10000.0], [0.0, np.pi], [0.0, 2*np.pi]]),
         geometry = 'spherical')
-
-    slc = yt.SlicePlot(ds, "theta", "density")
-    slc.set_cmap("density", "Blue-Red")
     return ds
 
 def convert_simplified_array():
@@ -4020,6 +4004,11 @@ def load_fieldlines(ds):
 def reinterp_3d_test():
     # WIP: see if it runs without errors
     grid3d_rhph('gdump.bin', use2d=False) # loads the data
-    rfd(fieldname) # I call this to initialize rho
-    gridcellverts_rhph() # converts to corners
-    # reinterpxyz(density, )
+    rfd('fieldline0000.bin') # I call this to initialize rho
+    extent = (-25., 25., -25., 25., -25., 25.)
+    extent2 = (-25., 25., -25., 25.)
+
+    irho1 = reinterpxyz(rho, extent, 100, domask = 1, interporder = 'linear')
+    irho2 = reinterpxy(rho, extent2, 100, domask = 1, interporder = 'linear')
+
+    return irho1
