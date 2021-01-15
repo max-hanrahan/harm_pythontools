@@ -3617,9 +3617,10 @@ def reinterpxy(vartointerp,extent,ncell,domask=1,interporder='cubic'):
     return(varinterpolated)
 
 def reinterpxyz(vartointerp,b,ncell,domask=1,interporder='cubic'):
-    # todo: b is a new vairable in this so, add that in for every time this function is called
     # Max's attempt at 3d interp 1/11/21
     # As of 1/13/21 I tried using 'linear' instead of 'cubic' for bug-squashing purposes
+    # todo: b is a new vairable in this so, add that in for every time this function is called
+
     global xi, yi, zi, ai
     xraw = r*np.sin(h)*np.cos(ph)
     yraw = r*np.sin(h)*np.sin(ph)
@@ -3629,9 +3630,9 @@ def reinterpxyz(vartointerp,b,ncell,domask=1,interporder='cubic'):
     rad = np.sqrt(3.0)*b #calculate the radius of a circle that a cube with side length 2*b will fit in
     irad  = int(iofr(rad)) #find the index corresponding to rad - maybe do a slightly larger cube in case griddata needs points outside the region of interest?
     x=xraw[0:irad,:,:].view().reshape(-1)
-    y=yraw[0:irad,:,:] .view().reshape(-1)
-    z=zraw [0:irad,:,:] .view().reshape(-1)
-    var=vartointerp [0:irad,:,:] .view().reshape(-1)
+    y=yraw[0:irad,:,:].view().reshape(-1)
+    z=zraw[0:irad,:,:].view().reshape(-1)
+    var=vartointerp[0:irad,:,:].view().reshape(-1)
 
     extent = (-b,b,-b,b,-b,b)
 
