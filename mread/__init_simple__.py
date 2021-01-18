@@ -3956,20 +3956,23 @@ def load_simplified_array(unique_r, unique_h, unique_ph):
         geometry = 'spherical')
     return ds
 
-def convert_simplified_array():
+def convert_simplified_array(fieldname):
     # convert the array of vertices to xyz coords
     # use this to convert make_simp to cartes (which we can't use hex_conn for)
-    simplified_array = make_simplified_array()
+    simplified_array = make_simplified_array(fieldname)
 
-    x_cart = np.zeros_like(rf.flatten())
-    y_cart = np.zeros_like(hf.flatten())
-    z_cart = np.zeros_like(phf.flatten())
+    data = rho.flatten()
 
-    x_cart=rf.flatten()* np.sin(hf.flatten())*np.cos(phf.flatten())
-    y_cart=rf.flatten()* np.sin(hf.flatten())*np.sin(phf.flatten())
-    z_cart=rf.flatten()*np.cos(hf.flatten())
+    x_cart = np.zeros_like(r.flatten())
+    y_cart = np.zeros_like(h.flatten())
+    z_cart = np.zeros_like(ph.flatten())
 
-    return x_cart, y_cart, z_cart
+    x_cart=r.flatten()* np.sin(h.flatten())*np.cos(ph.flatten())
+    y_cart=r.flatten()* np.sin(h.flatten())*np.sin(ph.flatten())
+    z_cart=r.flatten()* np.cos(h.flatten())
+
+    coords = np.stack((x_cart, y_cart, z_cart), axis = -1 )
+    return coords, data
 '''
 AS OF MONDAY NIGHT (12/21): I (Max) looked at the previous nine functions and here's what seems to be true:
     THE FIRST THREE:
@@ -3986,6 +3989,15 @@ As for controling the radius, it looks like slc.zoom(zoomfactor) can help.
 example of zoom function: https://yt-project.org/doc/visualizing/plots.html
 more potentially helpful methods: https://yt-project.org/doc/cookbook/complex_plots.html
 '''
+
+def load_point_plot(coords, data):
+    import pyvista as pv
+    import vtk
+
+    mesh = pv.PolyData(coords)
+    mesh['density'] = data
+    pv.set_plot_theme('night')
+    mesh.plot(point_size = 1, screenshot = 'density.png', colormap = 'jet')
 
 # ATTEMPT TO LOAD THE FIELDLINES:
 def load_fieldlines(ds):
@@ -4011,7 +4023,7 @@ def load_fieldlines(ds):
 def reinterp_3d_test():
     # WIP: see if it runs without errors
     grid3d_rhph('gdump.bin', use2d=False) # loads the data
-    rfd('fieldline0000.bin') # I call this to initialize rho
+    rfd('fieldline14926.bin') # I call this to initialize rho
     extent = (-25., 25., -25., 25., -25., 25.)
     extent2 = (-25., 25., -25., 25.)
 
@@ -4019,3 +4031,15 @@ def reinterp_3d_test():
     irho2 = reinterpxy(rho, extent2, 100, domask = 1, interporder = 'linear')
 
     return irho1
+
+def make_sphere_grid(coords, fieldname):
+    import pyvista as pv
+    simplified_array = make_simplified_array(fieldname)
+    grid_scalar = pv.StructuredGrid(coords)
+
+    # grid_scalar.cell_arrays["density"] = rho.flatten()
+
+    p = pv.Plotter()
+    p.add_mesh(pv.Sphere())
+    p.add_mesh(grid_scalar)
+    p.show()
