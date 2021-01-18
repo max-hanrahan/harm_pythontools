@@ -3961,18 +3961,18 @@ def convert_simplified_array(fieldname):
     # use this to convert make_simp to cartes (which we can't use hex_conn for)
     simplified_array = make_simplified_array(fieldname)
 
-    # the following is Connor's way of limiting the number of points we load into pyvista:
-    num_points = 2000000
+    # Connor came up with a way of limiting the number of points we load in.
+    # I modified this slightly to make it radius-based instead of number of points
 
     data = rho.flatten()
     rvalues = r.flatten()
     hvalues = h.flatten()
     phvalues = ph.flatten()
 
-    rvalues = rvalues[:num_points]
-    hvalues = hvalues[:num_points]
-    phvalues = phvalues[:num_points]
-    data = data[:num_points]
+    rvalues = rvalues[rvalues<= 50]
+    hvalues = hvalues[:rvalues.size]
+    phvalues = phvalues[:rvalues.size]
+    data = data[:rvalues.size]
 
     x_cart = np.zeros_like(rvalues)
     y_cart = np.zeros_like(hvalues)
