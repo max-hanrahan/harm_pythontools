@@ -3961,15 +3961,26 @@ def convert_simplified_array(fieldname):
     # use this to convert make_simp to cartes (which we can't use hex_conn for)
     simplified_array = make_simplified_array(fieldname)
 
+    # the following is Connor's way of limiting the number of points we load into pyvista:
+    num_points = 2000000
+
     data = rho.flatten()
+    rvalues = r.flatten()
+    hvalues = h.flatten()
+    phvalues = ph.flatten()
 
-    x_cart = np.zeros_like(r.flatten())
-    y_cart = np.zeros_like(h.flatten())
-    z_cart = np.zeros_like(ph.flatten())
+    rvalues = rvalues[:num_points]
+    hvalues = hvalues[:num_points]
+    phvalues = phvalues[:num_points]
+    data = data[:num_points]
 
-    x_cart=r.flatten()* np.sin(h.flatten())*np.cos(ph.flatten())
-    y_cart=r.flatten()* np.sin(h.flatten())*np.sin(ph.flatten())
-    z_cart=r.flatten()* np.cos(h.flatten())
+    x_cart = np.zeros_like(rvalues)
+    y_cart = np.zeros_like(hvalues)
+    z_cart = np.zeros_like(phvalues)
+
+    x_cart=rvalues* np.sin(hvalues)*np.cos(phvalues)
+    y_cart=rvalues* np.sin(hvalues)*np.sin(phvalues)
+    z_cart=rvalues* np.cos(hvalues)
 
     coords = np.stack((x_cart, y_cart, z_cart), axis = -1 )
     return coords, data
@@ -3997,6 +4008,12 @@ def load_point_plot(coords, data):
     mesh = pv.PolyData(coords)
     mesh['density'] = data
     pv.set_plot_theme('night')
+
+
+    p = pv.Plotter()
+    p.add_mesh(mesh, color='#965434')
+    p.add_mesh(mesh.outline())
+    # p.show(point_size = 1, screenshot = 'density.png', colormap = 'jet')
     mesh.plot(point_size = 1, screenshot = 'density.png', colormap = 'jet')
 
 # ATTEMPT TO LOAD THE FIELDLINES:
