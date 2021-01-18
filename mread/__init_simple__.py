@@ -3962,17 +3962,22 @@ def convert_simplified_array(fieldname):
     simplified_array = make_simplified_array(fieldname)
 
     # Connor came up with a way of limiting the number of points we load in.
-    # I modified this slightly to make it radius-based instead of number of points
+    # I modified this slightly to depend on radius instead of number of points
 
     data = rho.flatten()
-    rvalues = r.flatten()
-    hvalues = h.flatten()
-    phvalues = ph.flatten()
+    rvalues = rf.flatten()
+    hvalues = hf.flatten()
+    phvalues = phf.flatten()
 
-    rvalues = rvalues[rvalues<= 50]
+    desired_max_rad = 50
+
+    rvalues = rvalues[rvalues<= desired_max_rad]
     hvalues = hvalues[:rvalues.size]
     phvalues = phvalues[:rvalues.size]
     data = data[:rvalues.size]
+
+    import yt # dear god this is a long shot
+    conn = yt.hexahedral_connectivity(rf[:,0,0],hf[0,:,0],phf[0,0,:])[1]
 
     x_cart = np.zeros_like(rvalues)
     y_cart = np.zeros_like(hvalues)
@@ -3983,7 +3988,7 @@ def convert_simplified_array(fieldname):
     z_cart=rvalues* np.cos(hvalues)
 
     coords = np.stack((x_cart, y_cart, z_cart), axis = -1 )
-    return coords, data
+    return coords, conn, data
 '''
 AS OF MONDAY NIGHT (12/21): I (Max) looked at the previous nine functions and here's what seems to be true:
     THE FIRST THREE:
@@ -4001,19 +4006,13 @@ example of zoom function: https://yt-project.org/doc/visualizing/plots.html
 more potentially helpful methods: https://yt-project.org/doc/cookbook/complex_plots.html
 '''
 
-def load_point_plot(coords, data):
+def load_point_plot(coords, conn, data):
     import pyvista as pv
     import vtk
 
-    mesh = pv.PolyData(coords)
+    mesh = pv.PolyData(coords, conn)
     mesh['density'] = data
     pv.set_plot_theme('night')
-
-
-    p = pv.Plotter()
-    p.add_mesh(mesh, color='#965434')
-    p.add_mesh(mesh.outline())
-    # p.show(point_size = 1, screenshot = 'density.png', colormap = 'jet')
     mesh.plot(point_size = 1, screenshot = 'density.png', colormap = 'jet')
 
 # ATTEMPT TO LOAD THE FIELDLINES:
