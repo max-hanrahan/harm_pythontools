@@ -3991,7 +3991,7 @@ def render_isosurf_as_points(fieldname, rho_min):
 
     # then create the 3d coordinate array
     coords = np.stack((iso_x, iso_y, iso_z), axis = -1)
-    return coords, np.array(iso_rho), rho_short
+    return coords, np.array(iso_rho)
 '''
 AS OF MONDAY NIGHT (12/21): I (Max) looked at the previous nine functions and here's what seems to be true:
     THE FIRST THREE:
@@ -4013,10 +4013,13 @@ def load_point_plot(coords, data):
     import pyvista as pv
     import vtk
 
+    # fix the color map:
+    c_lo, c_hi = min(data), max(data)
+
     mesh = pv.PolyData(coords)
     mesh['density'] = data
     pv.set_plot_theme('night')
-    mesh.plot(point_size = 1, screenshot = 'density.png', colormap = 'jet')
+    mesh.plot(point_size = 1, screenshot = 'density.png', colormap = 'jet', clim = [c_lo,c_hi])
 
 # ATTEMPT TO LOAD THE FIELDLINES:
 def load_fieldlines(ds):
