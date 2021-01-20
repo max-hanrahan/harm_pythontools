@@ -3959,9 +3959,9 @@ def load_simplified_array(unique_r, unique_h, unique_ph):
 def render_isosurf_as_points(fieldname, rho_min):
     simplified_array = make_simplified_array(fieldname)
 
-    xraw = rf*np.sin(hf)*np.cos(phf)
-    yraw = rf*np.sin(hf)*np.sin(phf)
-    zraw = rf*np.cos(hf)
+    xraw = r*np.sin(h)*np.cos(ph)
+    yraw = r*np.sin(h)*np.sin(ph)
+    zraw = r*np.cos(h)
 
     # Connor came up with a way of limiting the number of points we load in.
     # I modified this slightly to depend on radius instead of number of points
@@ -3969,18 +3969,21 @@ def render_isosurf_as_points(fieldname, rho_min):
     desired_max_rad = 40
     rad_index = int(iofr(40))
 
-    # make sure these indeces are correct
+    # make sure these indices are correct
     x_short=xraw[0:rad_index,:,:].view().reshape(-1)
     y_short=yraw[0:rad_index,:,:].view().reshape(-1)
     z_short=zraw[0:rad_index,:,:].view().reshape(-1)
-    rho_short=rho[0:rad_index,:,:].view().reshape(-1)
+    rho_short=lrho[0:rad_index,:,:].view().reshape(-1)
 
-    iso_rho = iso_x = iso_y = iso_z = []
+    iso_rho = []
+    iso_x = []
+    iso_y = []
+    iso_z = []
 
     for i in range(len(rho_short)):
         # there's probably a faster way of doing this
         # print(rho_short[i])
-        if float(rho_short[i]) >= float(rho_min): 
+        if float(rho_short[i]) >= float(rho_min):
             iso_rho.append(rho_short[i])
             iso_x.append(x_short[i])
             iso_y.append(y_short[i])
@@ -3988,7 +3991,7 @@ def render_isosurf_as_points(fieldname, rho_min):
 
     # then create the 3d coordinate array
     coords = np.stack((iso_x, iso_y, iso_z), axis = -1)
-    return coords, np.array(iso_rho), rho.flatten()
+    return coords, np.array(iso_rho), rho_short
 '''
 AS OF MONDAY NIGHT (12/21): I (Max) looked at the previous nine functions and here's what seems to be true:
     THE FIRST THREE:
@@ -4013,7 +4016,7 @@ def load_point_plot(coords, data):
     mesh = pv.PolyData(coords)
     mesh['density'] = data
     pv.set_plot_theme('night')
-    mesh.plot(point_size = 10, screenshot = 'density.png', colormap = 'jet')
+    mesh.plot(point_size = 1, screenshot = 'density.png', colormap = 'jet')
 
 # ATTEMPT TO LOAD THE FIELDLINES:
 def load_fieldlines(ds):
