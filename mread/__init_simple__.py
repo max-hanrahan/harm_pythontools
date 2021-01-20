@@ -3956,39 +3956,39 @@ def load_simplified_array(unique_r, unique_h, unique_ph):
         geometry = 'spherical')
     return ds
 
-def convert_simplified_array(fieldname):
-    # convert the array of vertices to xyz coords
-    # use this to convert make_simp to cartes (which we can't use hex_conn for)
+def render_isosurf_as_points(fieldname, rho_min):
     simplified_array = make_simplified_array(fieldname)
+
+    xraw = rf*np.sin(hf)*np.cos(phf)
+    yraw = rf*np.sin(hf)*np.sin(phf)
+    zraw = rf*np.cos(hf)
 
     # Connor came up with a way of limiting the number of points we load in.
     # I modified this slightly to depend on radius instead of number of points
 
-    data = rho.flatten()
-    rvalues = rf.flatten()
-    hvalues = hf.flatten()
-    phvalues = phf.flatten()
+    desired_max_rad = 40
+    rad_index = int(iofr(40))
 
-    desired_max_rad = 50
+    # make sure these indeces are correct
+    x_short=xraw[0:rad_index,:,:].view().reshape(-1)
+    y_short=yraw[0:rad_index,:,:].view().reshape(-1)
+    z_short=zraw[0:rad_index,:,:].view().reshape(-1)
+    rho_short=rho[0:rad_index,:,:].view().reshape(-1)
 
-    rvalues = rvalues[rvalues<= desired_max_rad]
-    hvalues = hvalues[:rvalues.size]
-    phvalues = phvalues[:rvalues.size]
-    data = data[:rvalues.size]
+    iso_rho = iso_x = iso_y = iso_z = []
 
-    import yt # dear god this is a long shot
-    conn = yt.hexahedral_connectivity(rf[:,0,0],hf[0,:,0],phf[0,0,:])[1]
+    for i in range(len(rho_short)):
+        # there's probably a faster way of doing this
+        # print(rho_short[i])
+        if float(rho_short[i]) >= float(rho_min): 
+            iso_rho.append(rho_short[i])
+            iso_x.append(x_short[i])
+            iso_y.append(y_short[i])
+            iso_z.append(z_short[i])
 
-    x_cart = np.zeros_like(rvalues)
-    y_cart = np.zeros_like(hvalues)
-    z_cart = np.zeros_like(phvalues)
-
-    x_cart=rvalues* np.sin(hvalues)*np.cos(phvalues)
-    y_cart=rvalues* np.sin(hvalues)*np.sin(phvalues)
-    z_cart=rvalues* np.cos(hvalues)
-
-    coords = np.stack((x_cart, y_cart, z_cart), axis = -1 )
-    return coords, conn, data
+    # then create the 3d coordinate array
+    coords = np.stack((iso_x, iso_y, iso_z), axis = -1)
+    return coords, np.array(iso_rho), rho.flatten()
 '''
 AS OF MONDAY NIGHT (12/21): I (Max) looked at the previous nine functions and here's what seems to be true:
     THE FIRST THREE:
@@ -3996,7 +3996,7 @@ AS OF MONDAY NIGHT (12/21): I (Max) looked at the previous nine functions and he
     THE NEXT THREE:
         Helper functions, fine
     LAST THREE:
-        are working! But I'm not sure if the last one does its docstring task.
+        are working!
 
 Also, I found a list of color pallets: https://yt-project.org/doc/visualizing/colormaps/index.html
 Jet is the matplotlib-style one, let's stick with that.
@@ -4006,14 +4006,14 @@ example of zoom function: https://yt-project.org/doc/visualizing/plots.html
 more potentially helpful methods: https://yt-project.org/doc/cookbook/complex_plots.html
 '''
 
-def load_point_plot(coords, conn, data):
+def load_point_plot(coords, data):
     import pyvista as pv
     import vtk
 
-    mesh = pv.PolyData(coords, conn)
+    mesh = pv.PolyData(coords)
     mesh['density'] = data
     pv.set_plot_theme('night')
-    mesh.plot(point_size = 1, screenshot = 'density.png', colormap = 'jet')
+    mesh.plot(point_size = 10, screenshot = 'density.png', colormap = 'jet')
 
 # ATTEMPT TO LOAD THE FIELDLINES:
 def load_fieldlines(ds):
