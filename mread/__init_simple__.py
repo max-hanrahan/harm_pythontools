@@ -3958,6 +3958,7 @@ def load_simplified_array(unique_r, unique_h, unique_ph):
 
 def render_isosurf_as_points(fieldname, rho_min):
     simplified_array = make_simplified_array(fieldname)
+    global c_lo
 
     xraw = r*np.sin(h)*np.cos(ph)
     yraw = r*np.sin(h)*np.sin(ph)
@@ -3974,6 +3975,8 @@ def render_isosurf_as_points(fieldname, rho_min):
     y_short=yraw[0:rad_index,:,:].view().reshape(-1)
     z_short=zraw[0:rad_index,:,:].view().reshape(-1)
     rho_short=lrho[0:rad_index,:,:].view().reshape(-1)
+
+    c_lo = min(rho_short)
 
     iso_rho = []
     iso_x = []
@@ -4014,7 +4017,60 @@ def load_point_plot(coords, data):
     import vtk
 
     # fix the color map:
-    c_lo, c_hi = min(data), max(data)
+    c_hi = max(data)
+
+    mesh = pv.PolyData(coords)
+    mesh['density'] = data
+    pv.set_plot_theme('night')
+    mesh.plot(point_size = 1, screenshot = 'density.png', colormap = 'jet', clim = [c_lo,c_hi])
+
+def render_and_load_iso_points(fieldname, rho_min):
+    # this is merely a combination of the previous two Functions
+    # I created it to make a more sensible color map:
+    # rather than use magic numbers, I want the lower threshold of the color limit to be
+    # equal to the lowest value of the FULL  array of densities, which required the load function
+    # to have access to rho_short
+
+    # initializes necessary global vars
+    simplified_array = make_simplified_array(fieldname)
+
+    xraw = r*np.sin(h)*np.cos(ph)
+    yraw = r*np.sin(h)*np.sin(ph)
+    zraw = r*np.cos(h)
+
+    desired_max_rad = 40
+    rad_index = int(iofr(40))
+
+    x_short=xraw[0:rad_index,:,:].view().reshape(-1)
+    y_short=yraw[0:rad_index,:,:].view().reshape(-1)
+    z_short=zraw[0:rad_index,:,:].view().reshape(-1)
+    rho_short=lrho[0:rad_index,:,:].view().reshape(-1)
+
+    c_lo = min(rho_short) # lowest value on the colormap
+
+    iso_rho = []
+    iso_x = []
+    iso_y = []
+    iso_z = []
+
+    for i in range(len(rho_short)):
+        # there's probably a faster way of doing this
+        # print(rho_short[i])
+        if float(rho_short[i]) >= float(rho_min):
+            iso_rho.append(rho_short[i])
+            iso_x.append(x_short[i])
+            iso_y.append(y_short[i])
+            iso_z.append(z_short[i])
+
+    # then create the 3d coordinate array
+    coords = np.stack((iso_x, iso_y, iso_z), axis = -1)
+    data = np.array(iso_rho)
+
+    import pyvista as pv
+    import vtk
+
+    # highest value on the color map:
+    c_hi = max(rho_short)
 
     mesh = pv.PolyData(coords)
     mesh['density'] = data
