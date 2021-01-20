@@ -4016,13 +4016,27 @@ def load_point_plot(coords, data):
     import pyvista as pv
     import vtk
 
-    # fix the color map:
-    c_hi = max(data)
+    # fixing the colormap:
+    c_lo, c_hi = min(data), max(data)
 
     mesh = pv.PolyData(coords)
     mesh['density'] = data
+
+#     grid = pv.UniformGrid()
+#
+# # Set the grid dimensions: shape because we want to inject our values on the
+# #   POINT data
+#     grid_dimensions = coords.shape
+#
+# # Edit the spatial reference
+#     grid.origin = (0,0,0)  # The bottom left corner of the data set
+#     grid.spacing = (0.001, 0.001, 0.001)  # These are the cell sizes along each axis
+#     grid.point_arrays['density'] = data
+
+    plotter = pv.Plotter()
     pv.set_plot_theme('night')
-    mesh.plot(point_size = 1, screenshot = 'density.png', colormap = 'jet', clim = [c_lo,c_hi])
+    mesh.plot(scalars = 'density', colormap = 'jet', clim = [c_lo,c_hi], point_size = 1, text = "Cutoff lrho: " + str(c_lo))
+
 
 def render_and_load_iso_points(fieldname, rho_min):
     # this is merely a combination of the previous two Functions
@@ -4074,8 +4088,7 @@ def render_and_load_iso_points(fieldname, rho_min):
 
     mesh = pv.PolyData(coords)
     mesh['density'] = data
-    pv.set_plot_theme('night')
-    mesh.plot(point_size = 1, screenshot = 'density.png', colormap = 'jet', clim = [c_lo,c_hi])
+    mesh.plot(scalars = 'density', colormap = 'jet', clim = [c_lo,c_hi], point_size = 1, text = "Cutoff lrho: " + str(rho_min))
 
 # ATTEMPT TO LOAD THE FIELDLINES:
 def load_fieldlines(ds):
