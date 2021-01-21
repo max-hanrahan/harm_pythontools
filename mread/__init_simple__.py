@@ -3957,6 +3957,11 @@ def load_simplified_array(unique_r, unique_h, unique_ph):
     return ds
 
 def render_isosurf_as_points(fieldname, rho_min):
+    # this function was a prototupe of render_iso_full_density
+    # the args are the fieldlime name and the minimum density you want displayed
+    # now render_iso_full_density is much better, I would use that instead
+    # i'm just afraid to delete this.
+
     simplified_array = make_simplified_array(fieldname)
 
     xraw = r*np.sin(h)*np.cos(ph)
@@ -4008,9 +4013,13 @@ As for controling the radius, it looks like slc.zoom(zoomfactor) can help.
 example of zoom function: https://yt-project.org/doc/visualizing/plots.html
 more potentially helpful methods: https://yt-project.org/doc/cookbook/complex_plots.html
 '''
-def render_iso_full_density(fieldname):
+def render_iso_full_density(fnumber):
     # a copy of render_isosurf_as_points but without filtering low densities
-    simplified_array = make_simplified_array(fieldname)
+    # now includes an interactive slider!
+    if fnumber == 0:
+            simplified_array = make_simplified_array('fieldline0000.bin')
+    else:
+        simplified_array = make_simplified_array('fieldline'+ str(fnumber) + '.bin')
 
     xraw = r*np.sin(h)*np.cos(ph)
     yraw = r*np.sin(h)*np.sin(ph)
@@ -4054,22 +4063,22 @@ def load_point_plot(coords, data):
     if 1==1:
         # loads the data as points, as we've been doing
         mesh = pv.PolyData(coords)
-        mesh['density'] = data
+        mesh['lrho'] = data
         pv.set_plot_theme('night')
         plotter = pv.Plotter()
-
-        plotter.add_mesh_threshold(mesh, scalars = 'density', point_size = 1, clim=(c_lo, c_hi),
+        plotter.add_mesh_threshold(mesh, scalars = 'lrho', point_size = 1, clim=(c_lo, c_hi),
                       cmap='jet')
         plotter.show()
-def render_and_load_iso_points(fieldname, rho_min):
-    # this is merely a combination of the previous two Functions
-    # I created it to make a more sensible color map:
-    # rather than use magic numbers, I want the lower threshold of the color limit to be
-    # equal to the lowest value of the FULL  array of densities, which required the load function
-    # to have access to rho_short
-
+def render_and_load_iso_points(fnumber):
+    # this renders and loads the iso"surface" as points
+    # also displays the fnumber and includes the interactive lrho slider.
+    
     # initializes necessary global vars
-    simplified_array = make_simplified_array(fieldname)
+    if fnumber == 0:
+            simplified_array = make_simplified_array('fieldline0000.bin')
+            fnumber = '0000'
+    else:
+        simplified_array = make_simplified_array('fieldline'+ str(fnumber) + '.bin')
 
     xraw = r*np.sin(h)*np.cos(ph)
     yraw = r*np.sin(h)*np.sin(ph)
@@ -4083,37 +4092,23 @@ def render_and_load_iso_points(fieldname, rho_min):
     z_short=zraw[0:rad_index,:,:].view().reshape(-1)
     rho_short=lrho[0:rad_index,:,:].view().reshape(-1)
 
-    c_lo = min(rho_short) # lowest value on the colormap
-
-    iso_rho = []
-    iso_x = []
-    iso_y = []
-    iso_z = []
-
-    for i in range(len(rho_short)):
-        # there's probably a faster way of doing this
-        # print(rho_short[i])
-        if float(rho_short[i]) >= float(rho_min):
-            iso_rho.append(rho_short[i])
-            iso_x.append(x_short[i])
-            iso_y.append(y_short[i])
-            iso_z.append(z_short[i])
+    c_lo, c_hi = min(rho_short), max(rho_short) # colormap min/max
 
     # then create the 3d coordinate array
-    coords = np.stack((iso_x, iso_y, iso_z), axis = -1)
-    data = np.array(iso_rho)
+    coords = np.stack((x_short, y_short, z_short), axis = -1)
+    data = np.array(rho_short)
 
     import pyvista as pv
     import vtk
 
-    # highest value on the color map:
-    c_hi = max(rho_short)
-
     mesh = pv.PolyData(coords)
-    mesh['density'] = data
+    mesh['lrho'] = data
     pv.set_plot_theme('night')
-    mesh.plot(scalars = 'density', colormap = 'jet', clim = [c_lo,c_hi], point_size = 1, text = "Cutoff lrho: " + str(rho_min))
-
+    plotter = pv.Plotter()
+    plotter.add_text('fnumber: '+ str(fnumber))
+    plotter.add_mesh_threshold(mesh, scalars = 'lrho', point_size = 1, clim=(c_lo, c_hi),
+                          cmap='jet')
+    plotter.show()
 # ATTEMPT TO LOAD THE FIELDLINES:
 def load_fieldlines(ds):
     # takes the dataset loaded from yt, as in ds = yt.load_hexahedral_mesh(args)
