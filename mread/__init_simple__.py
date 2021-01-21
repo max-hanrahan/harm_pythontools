@@ -3958,7 +3958,6 @@ def load_simplified_array(unique_r, unique_h, unique_ph):
 
 def render_isosurf_as_points(fieldname, rho_min):
     simplified_array = make_simplified_array(fieldname)
-    global c_lo
 
     xraw = r*np.sin(h)*np.cos(ph)
     yraw = r*np.sin(h)*np.sin(ph)
@@ -3975,8 +3974,6 @@ def render_isosurf_as_points(fieldname, rho_min):
     y_short=yraw[0:rad_index,:,:].view().reshape(-1)
     z_short=zraw[0:rad_index,:,:].view().reshape(-1)
     rho_short=lrho[0:rad_index,:,:].view().reshape(-1)
-
-    c_lo = min(rho_short)
 
     iso_rho = []
     iso_x = []
@@ -4011,6 +4008,30 @@ As for controling the radius, it looks like slc.zoom(zoomfactor) can help.
 example of zoom function: https://yt-project.org/doc/visualizing/plots.html
 more potentially helpful methods: https://yt-project.org/doc/cookbook/complex_plots.html
 '''
+def render_iso_full_density(fieldname):
+    # a copy of render_isosurf_as_points but without filtering low densities
+    simplified_array = make_simplified_array(fieldname)
+
+    xraw = r*np.sin(h)*np.cos(ph)
+    yraw = r*np.sin(h)*np.sin(ph)
+    zraw = r*np.cos(h)
+
+    # Connor came up with a way of limiting the number of points we load in.
+    # I modified this slightly to depend on radius instead of number of points
+
+    desired_max_rad = 40
+    rad_index = int(iofr(40))
+
+    # make sure these indices are correct
+    x_short=xraw[0:rad_index,:,:].view().reshape(-1)
+    y_short=yraw[0:rad_index,:,:].view().reshape(-1)
+    z_short=zraw[0:rad_index,:,:].view().reshape(-1)
+    rho_short=lrho[0:rad_index,:,:].view().reshape(-1)
+
+    coords = np.stack((x_short, y_short, z_short), axis = -1)
+    data = np.array(rho_short)
+
+    return coords, data
 
 def load_point_plot(coords, data):
     import pyvista as pv
@@ -4024,24 +4045,22 @@ def load_point_plot(coords, data):
         grid = pv.UniformGrid()
         # I have no idea why, but nothing will run until grid.dimensions is set.
         # I've gathered that it must a 3-element array whose elements multiply to data.size.
-        # All this is to say that these three weird numbers are the three closest numbers I could find
-        # that made "approximately" a cube
-        grid.dimensions = (13*2**3, 3*7*2**3, 14*2**3)
+        grid.dimensions = data
         grid.point_arrays['density'] = data # should set the density
 
         plotter = pv.Plotter()
-        plotter.add_volume(grid, clim=(c_lo, c_hi),
-                      cmap='jet')
-        plotter.show()
+        grid.plot(volume = True, clim=(c_lo, c_hi),
+                      cmap='jet', text = "Cutoff lrho: " + str(c_lo))
     if 1==1:
         # loads the data as points, as we've been doing
         mesh = pv.PolyData(coords)
         mesh['density'] = data
-        plotter = pv.Plotter()
         pv.set_plot_theme('night')
-        mesh.plot(scalars = 'density', colormap = 'jet', clim = [c_lo,c_hi],
-        text = "Cutoff lrho: " + str(c_lo), point_size = 1)
+        plotter = pv.Plotter()
 
+        plotter.add_mesh_threshold(mesh, scalars = 'density', point_size = 1, clim=(c_lo, c_hi),
+                      cmap='jet')
+        plotter.show()
 def render_and_load_iso_points(fieldname, rho_min):
     # this is merely a combination of the previous two Functions
     # I created it to make a more sensible color map:
@@ -4092,6 +4111,7 @@ def render_and_load_iso_points(fieldname, rho_min):
 
     mesh = pv.PolyData(coords)
     mesh['density'] = data
+    pv.set_plot_theme('night')
     mesh.plot(scalars = 'density', colormap = 'jet', clim = [c_lo,c_hi], point_size = 1, text = "Cutoff lrho: " + str(rho_min))
 
 # ATTEMPT TO LOAD THE FIELDLINES:
