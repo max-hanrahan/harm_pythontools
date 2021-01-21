@@ -4019,24 +4019,28 @@ def load_point_plot(coords, data):
     # fixing the colormap:
     c_lo, c_hi = min(data), max(data)
 
-    mesh = pv.PolyData(coords)
-    mesh['density'] = data
+    if 1==0:
+        # I'm trying to get this to look like the example here: https://fbpic.github.io/advanced/3d_visualization.html
+        grid = pv.UniformGrid()
+        # I have no idea why, but nothing will run until grid.dimensions is set.
+        # I've gathered that it must a 3-element array whose elements multiply to data.size.
+        # All this is to say that these three weird numbers are the three closest numbers I could find
+        # that made "approximately" a cube
+        grid.dimensions = (13*2**3, 3*7*2**3, 14*2**3)
+        grid.point_arrays['density'] = data # should set the density
 
-#     grid = pv.UniformGrid()
-#
-# # Set the grid dimensions: shape because we want to inject our values on the
-# #   POINT data
-#     grid_dimensions = coords.shape
-#
-# # Edit the spatial reference
-#     grid.origin = (0,0,0)  # The bottom left corner of the data set
-#     grid.spacing = (0.001, 0.001, 0.001)  # These are the cell sizes along each axis
-#     grid.point_arrays['density'] = data
-
-    plotter = pv.Plotter()
-    pv.set_plot_theme('night')
-    mesh.plot(scalars = 'density', colormap = 'jet', clim = [c_lo,c_hi], point_size = 1, text = "Cutoff lrho: " + str(c_lo))
-
+        plotter = pv.Plotter()
+        plotter.add_volume(grid, clim=(c_lo, c_hi),
+                      cmap='jet')
+        plotter.show()
+    if 1==1:
+        # loads the data as points, as we've been doing
+        mesh = pv.PolyData(coords)
+        mesh['density'] = data
+        plotter = pv.Plotter()
+        pv.set_plot_theme('night')
+        mesh.plot(scalars = 'density', colormap = 'jet', clim = [c_lo,c_hi],
+        text = "Cutoff lrho: " + str(c_lo), point_size = 1)
 
 def render_and_load_iso_points(fieldname, rho_min):
     # this is merely a combination of the previous two Functions
