@@ -4054,8 +4054,8 @@ def load_point_plot(coords, data):
         grid = pv.UniformGrid()
         # I have no idea why, but nothing will run until grid.dimensions is set.
         # I've gathered that it must a 3-element array whose elements multiply to data.size.
-        grid.dimensions = data
-        grid.point_arrays['density'] = data # should set the density
+        grid.dimensions = (192, 96, 208) # this is from rho.shape
+        grid.point_arrays['density'] = data.flatten(order = 'F') # should set the density
 
         plotter = pv.Plotter()
         grid.plot(volume = True, clim=(c_lo, c_hi),
@@ -4072,7 +4072,7 @@ def load_point_plot(coords, data):
 def render_and_load_iso_points(fnumber):
     # this renders and loads the iso"surface" as points
     # also displays the fnumber and includes the interactive lrho slider.
-    
+
     # initializes necessary global vars
     if fnumber == 0:
             simplified_array = make_simplified_array('fieldline0000.bin')
@@ -4101,14 +4101,30 @@ def render_and_load_iso_points(fnumber):
     import pyvista as pv
     import vtk
 
-    mesh = pv.PolyData(coords)
-    mesh['lrho'] = data
-    pv.set_plot_theme('night')
-    plotter = pv.Plotter()
-    plotter.add_text('fnumber: '+ str(fnumber))
-    plotter.add_mesh_threshold(mesh, scalars = 'lrho', point_size = 1, clim=(c_lo, c_hi),
-                          cmap='jet')
-    plotter.show()
+    if 1==0:
+        # I'm trying to get this to look like the example here: https://fbpic.github.io/advanced/3d_visualization.html
+        # CAUTION: for this to work, change the r, h, and ph in this function rf, hf, and phf (and also get rid of 1==0, ya dingus)
+        grid = pv.UniformGrid()
+        grid.dimensions = lrho.shape
+        grid.point_arrays['density'] = lrho.ravel(order = 'F') # should set the density
+
+        pv.set_plot_theme('night')
+        plotter = pv.Plotter()
+        plotter.add_text('fnumber: '+ str(fnumber))
+        plotter.add_volume(grid, clim=(c_lo, c_hi),
+                      cmap='jet')
+        # plotter.add_mesh(grid)
+        plotter.show()
+    if 1==1:
+        # loads the data as points, as we've been doing
+        mesh = pv.PolyData(coords)
+        mesh['lrho'] = data
+        pv.set_plot_theme('night')
+        plotter = pv.Plotter()
+        plotter.add_text('fnumber: '+ str(fnumber))
+        plotter.add_mesh_threshold(mesh, scalars = 'lrho', point_size = 1, clim=(c_lo, c_hi),
+                      cmap='jet')
+        plotter.show()
 # ATTEMPT TO LOAD THE FIELDLINES:
 def load_fieldlines(ds):
     # takes the dataset loaded from yt, as in ds = yt.load_hexahedral_mesh(args)
