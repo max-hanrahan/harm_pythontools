@@ -1,3 +1,7 @@
+'''
+An even simpler version of __init_student__ that Max made for rendering/loading
+densities and fieldlines.
+'''
 ###Simplified code with only the functions needed to replicate Marshall, McKinney, and Avara 2018
 ###needs a lot of commenting and to updated to work with Python3 (Megan 6/5/20)
 
@@ -3618,7 +3622,6 @@ def reinterpxy(vartointerp,extent,ncell,domask=1,interporder='cubic'):
 
 def reinterpxyz(vartointerp,b,ncell,domask=1,interporder='cubic'):
     # Max's attempt at 3d interp 1/11/21
-    # As of 1/13/21 I tried using 'linear' instead of 'cubic' for bug-squashing purposes
     # todo: b is a new vairable in this so, add that in for every time this function is called
 
     global xi, yi, zi, ai
@@ -3685,7 +3688,7 @@ def reinterpxyhor(vartointerp,extent,ncell,domask=1,interporder='cubic'):
     return(varinterpolated)
 
 def velinterp_3d(fnumber, rng, extent, ncell):
-    '''Max's attempt at a function which uses reinterpxyz() instead of reinterpxy()
+    '''Max's attempt at a function which calls reinterpxyz() instead of reinterpxy()
     1/11/2021'''
     grid3d("gdump.bin",use2d=False)
     #load the fieldline file for a given time and compute standard quantities
@@ -3710,10 +3713,12 @@ def velinterp_3d(fnumber, rng, extent, ncell):
     vxhor=vRhor*np.cos(ph)-vpnorm*np.sin(ph)
     vyhor=vRhor*np.sin(ph)+vpnorm*np.cos(ph)
     #make uniform grid for velocity
-    ivx=reinterpxyz(vxnorm,extent,ncell,domask=1,interporder='linear')
+    # I put extent[1] here because this function takes the 'b' arg, not extent anymore -Max 1/22/21
+    ivx=reinterpxyz(vxnorm,extent[1],ncell,domask=1,interporder='linear')
     ivx_h=reinterpxyhor(vxhor,extent,ncell,domask=1,interporder='linear')
     ivx[ivx.mask==True]=ivx_h[ivx.mask==True]
-    ivy=reinterpxyz(vynorm,extent,ncell,domask=1,interporder='linear')
+    # I put extent[1] here because this function takes the 'b' arg, not extent anymore -Max 1/22/21
+    ivy=reinterpxyz(vynorm,extent[1],ncell,domask=1,interporder='linear')
     ivy_h=reinterpxyhor(vyhor,extent,ncell,domask=1,interporder='linear')
     ivy[ivy.mask==True]=ivy_h[ivy.mask==True]
 
@@ -3751,58 +3756,13 @@ def velinterp(fnumber, rng, extent, ncell):
     ivy[ivy.mask==True]=ivy_h[ivy.mask==True]
 
     return ivx, ivy
-
-def construct_cartesian():
-    # takes the raw data from rf, hf, and phf to make an array in cartesian coords
-    # first we call the functions to get rh, hf, and phf
-    grid3d("gdump.bin",use2d = False)
-    gridcellverts()
-
-    x_cart = np.zeros_like(rf)
-    y_cart = np.zeros_like(hf)
-    z_cart = np.zeros_like(phf)
-
-    x_cart=rf* np.sin(hf)*np.cos(phf)
-    y_cart=rf* np.sin(hf)*np.sin(phf)
-    z_cart=rf*np.cos(hf)
-
-    print(x_cart.shape)
-
-    return x_cart, y_cart, z_cart
-
-def test_random_points():
-    # compared inputs and outputs to this calculator: https://keisan.casio.com/exec/system/1359534351
-    # CAVEAT: this site treats theta as the angle in the xy-plane and phi as the azimuthal
-
-    # I tested five or so points like so, it looks like it works! But it doesn't seem to work anymore?
-    # TO DO (Max): FIGURE OUT HOW IT BROKE
-    grid3d("gdump.bin",use2d = False)
-    gridcellverts()
-    x_cart, y_cart, z_cart = construct_cartesian()
-    digit = rnd.randint(0, 96)
-    print("Digit chosen: " + str(digit))
-    print("in spherical:")
-    print(rf.shape)
-    print(rf[0][digit], hf[0][digit], phf[0][digit])
-    print("In cartesian:")
-    print(x_cart[0][digit], y_cart[0][digit], z_cart[0][digit])
-
-# initializing this in a global scope, right here, ensures that rfd() returns no errors
-use2dglobal = False
-
-def load_array_as_cartesian(x_array, y_array, z_array):
-    # Takes x, y, z and (attempts) to load it into a yt framework
-    # It hasn't worked yet
-    import yt
-
-    #return coords, conn
-    coords, conn = yt.hexahedral_connectivity(x_array[0][0], y_array[0][0], z_array[0][0]) # This is what I likely messed up
-    data = {"density" : rho} # make a dict of the densities (todo: add b-field components once this function works)
-    ds = yt.load_hexahedral_mesh(data, conn, coords,
-        bbox = np.array([[-10000.0, 10000.0], [-10000.0, 10000.0], [-10000.0, 10000.0]]),
-        geometry = 'cartesian')
-    return ds
-
+'''
+ -------------------------------------------------------------------------------
+Here are three helper functions that Max made.
+They exist because grid_3d, grid3d_load, and gridcellverts all take a long time
+to run. So this just initializes the important stuff pertaining to r, theata, and phi.
+ -------------------------------------------------------------------------------
+'''
 def grid3d_rhph(dumpname,use2d=False,doface=False,usethetarot0=False): #read grid dump file: header and body
     # THIS IS A COPY of grid3d that only deals with r, h, and ph (Max 12/17)
     #
@@ -3929,16 +3889,71 @@ def gridcellverts_rhph():
     #extend in theta
     phf[:,ny,:]   =   phf[:,ny-1,:]
 
+'''
+ -------------------------------------------------------------------------------
+YT Project-related functions that Max and Connor made:
+ -------------------------------------------------------------------------------
+'''
+def construct_cartesian():
+    # takes the raw data from rf, hf, and phf to make an array in cartesian coords
+    # first we call the functions to get rh, hf, and phf
+    grid3d("gdump.bin",use2d = False)
+    gridcellverts()
+
+    x_cart = np.zeros_like(rf)
+    y_cart = np.zeros_like(hf)
+    z_cart = np.zeros_like(phf)
+
+    x_cart=rf* np.sin(hf)*np.cos(phf)
+    y_cart=rf* np.sin(hf)*np.sin(phf)
+    z_cart=rf*np.cos(hf)
+
+    return x_cart, y_cart, z_cart
+
+def test_random_points():
+    # compared inputs and outputs to this calculator: https://keisan.casio.com/exec/system/1359534351
+    # CAVEAT: this site treats theta as the angle in the xy-plane and phi as the azimuthal
+
+    # This function is broken but not that useful. I think my indexing is wrong.
+    # TO DO (Max): FIGURE OUT HOW IT BROKE
+    grid3d("gdump.bin",use2d = False)
+    gridcellverts()
+    x_cart, y_cart, z_cart = construct_cartesian()
+    digit = rnd.randint(0, 96)
+    print("Digit chosen: " + str(digit))
+    print("in spherical:")
+    print(rf[0][digit], hf[0][digit], phf[0][digit])
+    print("In cartesian:")
+    print(x_cart[0][digit], y_cart[0][digit], z_cart[0][digit])
+
+# initializing this in a global scope, right here, ensures that rfd() returns no errors
+use2dglobal = False
+
+def load_array_as_cartesian(x_array, y_array, z_array):
+    # Takes x, y, z and (attempts) to load it into a yt framework
+    # This is also broken cause my indexing is (probably) wrong.
+    # But I haven't fixed it cause it is not that useful
+    import yt
+
+    #return coords, conn
+    coords, conn = yt.hexahedral_connectivity(x_array[0][0], y_array[0][0], z_array[0][0]) # This is what I likely messed up
+    data = {"density" : rho} # make a dict of the densities (todo: add b-field components once this function works)
+    ds = yt.load_hexahedral_mesh(data, conn, coords,
+        bbox = np.array([[-10000.0, 10000.0], [-10000.0, 10000.0], [-10000.0, 10000.0]]),
+        geometry = 'cartesian')
+    return ds
+
 def make_simplified_array(fieldname):
-    # should create the r h and ph array as an array of vertices
+    # creates the r h and ph array as an array of vertices
+    # then we load it into yt
     grid3d_rhph('gdump.bin', use2d=False) # loads the data
     rfd(fieldname) # I call this to initialize rho
     gridcellverts_rhph() # converts to corners
 
     # splits the 3d arrays into their unique columns
-    unique_r = rf[:,0,0]
-    unique_h = hf[0,:,0]
-    unique_ph = phf[0,0,:]
+    unique_r = rf[:,0,0].view().reshape(-1)
+    unique_h = hf[0,:,0].view().reshape(-1)
+    unique_ph = phf[0,0,:].view().reshape(-1)
 
     # the other thing: truncate r at r = 50 if it's too big
     xf=int(iofr(50)) # the index at which we should truncate if necessary
@@ -3954,15 +3969,52 @@ def load_simplified_array(unique_r, unique_h, unique_ph):
     ds = yt.load_hexahedral_mesh(data, conn, coords,
         bbox = np.array([[0.0, 10000.0], [0.0, np.pi], [0.0, 2*np.pi]]),
         geometry = 'spherical')
+    #
+    slc = yt.SlicePlot(ds, 'theta', 'density')
+    slc.set_cmap(field="density", cmap='jet')
+    slc.hide_axes() # todo: take out this line and give it proper axis labels
+    slc.save()
     return ds
 
-def render_isosurf_as_points(fieldname, rho_min):
+# ATTEMPT TO LOAD THE FIELDLINES (using YT):
+def load_fieldlines(ds):
+    # takes the dataset loaded from yt, as in ds = yt.load_hexahedral_mesh(args)
+    c = ds.domain_center # center of the sphere
+    N = 100 # number of field lines
+    scale = ds.domain_width[0]# scale of lines relative to boxsize
+    pos_dx = np.random.random((N, 3))*scale-scale/2 # position relative to center (randomly deifined)
+    pos = c+pos_dx # absolute location of fieldline pos
+    from yt.visualization.api import Streamlines
+
+    # create streamline of 3d vector velocity and integrate through boundary defined above
+    streamlines = Streamlines(ds, pos, 'br', 'bh', 'bp', get_magnitude = True)
+    streamlines.integrate_through_volume()
+
+    for stream in streamlines.streamlines:
+        stream = stream[np.all(stream != 0.0, axis=1)]
+        ax.plot3D(stream[:,0], stream[:,1], stream[:,2], alpha=0.1)
+
+    # Save the plot to disk.
+    plt.savefig('streamlines.png')
+'''
+ -------------------------------------------------------------------------------
+PyVista/VTK functions that Max and Connor made:
+ -------------------------------------------------------------------------------
+'''
+
+def render_isosurf_as_points(fnumber, rho_min = None):
     # this function was a prototupe of render_iso_full_density
     # the args are the fieldlime name and the minimum density you want displayed
     # now render_iso_full_density is much better, I would use that instead
     # i'm just afraid to delete this.
 
-    simplified_array = make_simplified_array(fieldname)
+    if fnumber == 0:
+        simplified_array = make_simplified_array('fieldline0000.bin')
+    else:
+        simplified_array = make_simplified_array('fieldline'+ str(fnumber) + '.bin')
+
+    if rho_min == None:
+        rho_min = min(lrho)
 
     xraw = r*np.sin(h)*np.cos(ph)
     yraw = r*np.sin(h)*np.sin(ph)
@@ -3997,22 +4049,7 @@ def render_isosurf_as_points(fieldname, rho_min):
     # then create the 3d coordinate array
     coords = np.stack((iso_x, iso_y, iso_z), axis = -1)
     return coords, np.array(iso_rho)
-'''
-AS OF MONDAY NIGHT (12/21): I (Max) looked at the previous nine functions and here's what seems to be true:
-    THE FIRST THREE:
-        first function looks okay, the next two are broken but not that useful
-    THE NEXT THREE:
-        Helper functions, fine
-    LAST THREE:
-        are working!
 
-Also, I found a list of color pallets: https://yt-project.org/doc/visualizing/colormaps/index.html
-Jet is the matplotlib-style one, let's stick with that.
-
-As for controling the radius, it looks like slc.zoom(zoomfactor) can help.
-example of zoom function: https://yt-project.org/doc/visualizing/plots.html
-more potentially helpful methods: https://yt-project.org/doc/cookbook/complex_plots.html
-'''
 def render_iso_full_density(fnumber):
     # a copy of render_isosurf_as_points but without filtering low densities
     # now includes an interactive slider!
@@ -4043,6 +4080,11 @@ def render_iso_full_density(fnumber):
     return coords, data
 
 def load_point_plot(coords, data):
+    # Loads and displays the data assembled in the preceeding function
+    # This function is mainly for testing purposes.
+    # The colormap works better if you render and load in the same function.
+    # That way, the low and high points of the colormap are based on the unfiltered rho-data.
+    # However, this function takes only the filtered data as input. -Max 1/22/21
     import pyvista as pv
     import vtk
 
@@ -4066,9 +4108,11 @@ def load_point_plot(coords, data):
         mesh['lrho'] = data
         pv.set_plot_theme('night')
         plotter = pv.Plotter()
+        plotter.add_text(text = "Cutoff lrho: " + str(c_lo))
         plotter.add_mesh_threshold(mesh, scalars = 'lrho', point_size = 1, clim=(c_lo, c_hi),
                       cmap='jet')
         plotter.show()
+
 def render_and_load_iso_points(fnumber):
     # this renders and loads the iso"surface" as points
     # also displays the fnumber and includes the interactive lrho slider.
@@ -4122,43 +4166,25 @@ def render_and_load_iso_points(fnumber):
         pv.set_plot_theme('night')
         plotter = pv.Plotter()
         plotter.add_text('fnumber: '+ str(fnumber))
-        plotter.add_mesh_threshold(mesh, scalars = 'lrho', point_size = 1, clim=(c_lo, c_hi),
-                      cmap='jet')
+        plotter.add_mesh_threshold(mesh, scalars = 'lrho', point_size = 1, clim=(c_lo, c_hi),cmap='jet')
         plotter.show()
-# ATTEMPT TO LOAD THE FIELDLINES:
-def load_fieldlines(ds):
-    # takes the dataset loaded from yt, as in ds = yt.load_hexahedral_mesh(args)
-    c = ds.domain_center # center of the sphere
-    N = 100 # number of field lines
-    scale = ds.domain_width[0]# scale of lines relative to boxsize
-    pos_dx = np.random.random((N, 3))*scale-scale/2 # position relative to center (randomly deifined)
-    pos = c+pos_dx # absolute location of fieldline pos
-    from yt.visualization.api import Streamlines
-
-    # create streamline of 3d vector velocity and integrate through boundary defined above
-    streamlines = Streamlines(ds, pos, 'br', 'bh', 'bp', get_magnitude = True)
-    streamlines.integrate_through_volume()
-
-    for stream in streamlines.streamlines:
-        stream = stream[np.all(stream != 0.0, axis=1)]
-        ax.plot3D(stream[:,0], stream[:,1], stream[:,2], alpha=0.1)
-
-    # Save the plot to disk.
-    plt.savefig('streamlines.png')
 
 def reinterp_3d_test():
-    # WIP: see if it runs without errors
+    # not related to PyVista, Vtk, or YT. Just testing the reinterpxyz() function Max tried to make
+    # WIP: see if this runs without errors
     grid3d_rhph('gdump.bin', use2d=False) # loads the data
     rfd('fieldline14926.bin') # I call this to initialize rho
     extent = (-25., 25., -25., 25., -25., 25.)
     extent2 = (-25., 25., -25., 25.)
 
     irho1 = reinterpxyz(rho, 40., 100, domask = 1, interporder = 'linear')
-    irho2 = reinterpxy(rho, extent2, 100, domask = 1, interporder = 'linear')
+    irho2 = reinterpxy(rho, extent2[1], 100, domask = 1, interporder = 'linear')
 
-    return irho1
+    return irho1, irho2
 
 def make_sphere_grid(coords, fieldname):
+    # No luck loading it in as spherical data yet. I don't think pyvista even supports spheroids.
+    # This is the skeleton of an attempt to do so that I am afraid to delete. -Max 1/22/21
     import pyvista as pv
     simplified_array = make_simplified_array(fieldname)
     grid_scalar = pv.StructuredGrid(coords)
